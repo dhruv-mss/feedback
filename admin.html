@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>hoblie — responses</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#FAF3E7;
+    --cream-deep:#F1E1CB;
+    --card:#FFFCF7;
+    --ink:#2B2420;
+    --ink-muted:#8a7a68;
+    --terracotta:#C1592D;
+    --terracotta-dark:#A6461F;
+    --terracotta-soft:#F1DAC7;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh;
+    background:var(--cream);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+  }
+  h1,h2{ font-family:'Fraunces',serif; font-style:italic; font-weight:500; margin:0; }
+
+  .login-wrap{
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .login-card{
+    background:var(--card); border-radius:24px; padding:36px 30px; width:100%; max-width:380px;
+    box-shadow: 0 20px 50px -25px rgba(43,36,32,.3);
+  }
+  .brandmark{ font-family:'Fraunces',serif; font-style:italic; font-weight:600; color:var(--terracotta); margin-bottom:6px; }
+  .login-card h1{ font-size:24px; margin-bottom:20px; }
+  .field{ margin-bottom:14px; }
+  label{ display:block; font-size:13px; font-weight:600; color:var(--ink-muted); margin-bottom:6px; }
+  input{
+    width:100%; border:2px solid var(--cream-deep); background:#fff; border-radius:14px;
+    padding:12px 16px; font-size:15px; font-family:'Inter',sans-serif; outline:none; color:var(--ink);
+  }
+  input:focus{ border-color:var(--terracotta); }
+  .btn{
+    appearance:none; border:none; cursor:pointer; font-weight:600; font-size:15px;
+    border-radius:999px; padding:13px 22px; width:100%; background:var(--terracotta); color:#fff8f2;
+    margin-top:6px; transition: transform .12s ease;
+  }
+  .btn:active{ transform:scale(.97); }
+  .btn:disabled{ opacity:.5; cursor:not-allowed; }
+  .err{ color:var(--terracotta-dark); font-size:13.5px; margin-top:10px; display:none; }
+  .err.show{ display:block; }
+
+  .dash{ display:none; max-width:900px; margin:0 auto; padding:26px 20px 60px; }
+  .dash.show{ display:block; }
+  .dash-top{
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; gap:12px; flex-wrap:wrap;
+  }
+  .dash-top h1{ font-size:26px; }
+  .top-actions{ display:flex; gap:10px; }
+  .btn-sm{
+    appearance:none; border:2px solid var(--cream-deep); background:var(--card); color:var(--ink);
+    font-weight:600; font-size:13.5px; border-radius:999px; padding:9px 16px; cursor:pointer;
+  }
+  .btn-sm:hover{ border-color:var(--terracotta); }
+  .count-pill{
+    background:var(--terracotta-soft); color:var(--terracotta-dark); font-weight:700; font-size:13px;
+    padding:6px 14px; border-radius:999px;
+  }
+
+  .cards{ display:flex; flex-direction:column; gap:12px; }
+  .rcard{
+    background:var(--card); border-radius:18px; padding:16px 18px; box-shadow:0 6px 18px -12px rgba(43,36,32,.25);
+    cursor:pointer;
+  }
+  .rcard-head{ display:flex; justify-content:space-between; align-items:center; gap:10px; }
+  .rcard-name{ font-weight:700; font-size:16px; }
+  .rcard-date{ font-size:12.5px; color:var(--ink-muted); white-space:nowrap; }
+  .rcard-tags{ display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+  .tag{ background:var(--cream-deep); color:var(--ink); font-size:11.5px; font-weight:600; padding:4px 10px; border-radius:999px; }
+  .tag.love{ background:var(--terracotta-soft); color:var(--terracotta-dark); }
+
+  .rcard-body{
+    max-height:0; overflow:hidden; transition:max-height .3s ease, margin .3s ease;
+  }
+  .rcard.open .rcard-body{ max-height:2000px; margin-top:14px; }
+  .qa{ margin-bottom:12px; }
+  .qa .q{ font-size:12px; font-weight:700; color:var(--ink-muted); text-transform:uppercase; letter-spacing:.02em; margin-bottom:3px; }
+  .qa .a{ font-size:14.5px; line-height:1.5; white-space:pre-wrap; }
+  .qa .a.empty{ color:var(--ink-muted); font-style:italic; }
+
+  .empty-state{ text-align:center; padding:60px 20px; color:var(--ink-muted); }
+  .loading{ text-align:center; padding:60px 20px; color:var(--ink-muted); }
+</style>
+</head>
+<body>
+
+<div class="login-wrap" id="loginWrap">
+  <div class="login-card">
+    <p class="brandmark">hoblie</p>
+    <h1>Sign in</h1>
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="loginEmail" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="loginPassword" autocomplete="current-password">
+    </div>
+    <button class="btn" id="loginBtn">Sign in</button>
+    <p class="err" id="loginErr">Couldn't sign in — check your email and password.</p>
+  </div>
+</div>
+
+<div class="dash" id="dash">
+  <div class="dash-top">
+    <div>
+      <p class="brandmark" style="margin-bottom:4px;">hoblie</p>
+      <h1>Responses</h1>
+    </div>
+    <div class="top-actions">
+      <span class="count-pill" id="countPill">0</span>
+      <button class="btn-sm" id="refreshBtn">Refresh</button>
+      <button class="btn-sm" id="signOutBtn">Sign out</button>
+    </div>
+  </div>
+  <div id="listWrap"><div class="loading">Loading…</div></div>
+</div>
+
+<script type="module">
+// Replace with your project's values (same as index.html) — Settings -> API.
+const SUPABASE_URL = "YOUR_SUPABASE_URL";
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+
+const isConfigured = !SUPABASE_URL.includes("YOUR_SUPABASE_URL") && !SUPABASE_ANON_KEY.includes("YOUR_SUPABASE_ANON_KEY");
+let supabase = null;
+
+async function initSupabase() {
+  if (!isConfigured) return;
+  try {
+    const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+    supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  } catch (e) {
+    console.error('hoblie admin: could not load Supabase client.', e);
+  }
+}
+const supabaseReady = initSupabase();
+
+const loginWrap = document.getElementById('loginWrap');
+const dash = document.getElementById('dash');
+const loginBtn = document.getElementById('loginBtn');
+const loginErr = document.getElementById('loginErr');
+const listWrap = document.getElementById('listWrap');
+const countPill = document.getElementById('countPill');
+
+function esc(str) {
+  const d = document.createElement('div');
+  d.textContent = str ?? '';
+  return d.innerHTML;
+}
+
+function fmtDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+const QA_FIELDS = [
+  ['made_kit', 'Made the kit?'],
+  ['not_yet_reason', "What's held them back"],
+  ['experience', 'Experience'],
+  ['liked_most', 'Liked most'],
+  ['anything_else', 'Anything else'],
+  ['first_time_story', 'First time making something'],
+  ['process_or_output', 'Process or output'],
+  ['surrender_moment', 'The "it clicked" moment'],
+  ['feeling', 'How it felt'],
+  ['wall_reaction', 'Wall of fame reaction'],
+  ['wall_display', 'What they\'d put on the wall'],
+  ['call_interest', 'Up for a call?'],
+  ['call_best_time', 'Best time to call'],
+  ['email', 'Email'],
+  ['address', 'Address']
+];
+
+function renderRows(rows) {
+  countPill.textContent = rows.length;
+  if (!rows.length) {
+    listWrap.innerHTML = '<div class="empty-state">No responses yet — share the link and check back soon.</div>';
+    return;
+  }
+  listWrap.innerHTML = '';
+  const cards = document.createElement('div');
+  cards.className = 'cards';
+  rows.forEach(r => {
+    const card = document.createElement('div');
+    card.className = 'rcard';
+
+    const tags = [];
+    if (r.made_kit) tags.push(r.made_kit === 'yes' ? 'Made it' : 'Not yet');
+    if (r.experience) tags.push(r.experience);
+    if (r.wall_reaction) tags.push('wall: ' + r.wall_reaction);
+    if (r.call_interest) tags.push('wants a call');
+
+    card.innerHTML = `
+      <div class="rcard-head">
+        <div class="rcard-name">${esc(r.name || 'Anonymous')}</div>
+        <div class="rcard-date">${fmtDate(r.created_at)}</div>
+      </div>
+      <div class="rcard-tags">${tags.map(t => `<span class="tag ${t==='loved'?'love':''}">${esc(t)}</span>`).join('')}</div>
+      <div class="rcard-tags" style="margin-top:4px;">
+        ${r.phone ? `<span class="tag">${esc(r.phone)}</span>` : ''}
+      </div>
+      <div class="rcard-body">
+        ${QA_FIELDS.map(([key, label]) => {
+          let val = r[key];
+          if (key === 'call_interest') val = val === true ? 'Yes' : (val === false ? 'No' : null);
+          return `<div class="qa"><div class="q">${esc(label)}</div><div class="a ${!val ? 'empty' : ''}">${val ? esc(val) : '—'}</div></div>`;
+        }).join('')}
+      </div>
+    `;
+    card.addEventListener('click', () => card.classList.toggle('open'));
+    cards.appendChild(card);
+  });
+  listWrap.appendChild(cards);
+}
+
+async function loadResponses() {
+  listWrap.innerHTML = '<div class="loading">Loading…</div>';
+  const { data, error } = await supabase.from('responses').select('*').order('created_at', { ascending: false });
+  if (error) {
+    listWrap.innerHTML = `<div class="empty-state">Couldn't load responses: ${esc(error.message)}</div>`;
+    return;
+  }
+  renderRows(data || []);
+}
+
+async function showDashboard() {
+  loginWrap.style.display = 'none';
+  dash.classList.add('show');
+  await loadResponses();
+}
+
+document.getElementById('refreshBtn').addEventListener('click', loadResponses);
+document.getElementById('signOutBtn').addEventListener('click', async () => {
+  await supabase.auth.signOut();
+  location.reload();
+});
+
+loginBtn.addEventListener('click', async () => {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  loginErr.classList.remove('show');
+  loginBtn.disabled = true;
+  loginBtn.textContent = 'Signing in…';
+
+  await supabaseReady;
+  if (!isConfigured || !supabase) {
+    loginErr.textContent = isConfigured
+      ? "Couldn't reach Supabase — check your connection and try again."
+      : 'Supabase is not configured yet — see README.md.';
+    loginErr.classList.add('show');
+    loginBtn.disabled = false;
+    loginBtn.textContent = 'Sign in';
+    return;
+  }
+
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  loginBtn.disabled = false;
+  loginBtn.textContent = 'Sign in';
+  if (error) {
+    loginErr.textContent = "Couldn't sign in — check your email and password.";
+    loginErr.classList.add('show');
+    return;
+  }
+  showDashboard();
+});
+
+(async function init() {
+  await supabaseReady;
+  if (!isConfigured || !supabase) return;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session) showDashboard();
+})();
+</script>
+</body>
+</html>

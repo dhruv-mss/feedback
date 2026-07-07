@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>hoblie — a quick thing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500;1,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#FAF3E7;
+    --cream-deep:#F1E1CB;
+    --card:#FFFCF7;
+    --ink:#2B2420;
+    --ink-muted:#8a7a68;
+    --terracotta:#C1592D;
+    --terracotta-dark:#A6461F;
+    --terracotta-soft:#F1DAC7;
+    --ring: rgba(193,89,45,0.25);
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; height:100%;
+    background:var(--cream);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overscroll-behavior-y: none;
+  }
+  body{
+    min-height:100dvh;
+    display:flex;
+    justify-content:center;
+    align-items:stretch;
+  }
+  .app-shell{
+    width:100%;
+    max-width:560px;
+    min-height:100dvh;
+    display:flex;
+    flex-direction:column;
+    position:relative;
+    padding: 20px 22px 28px;
+  }
+  @media (min-width:640px){
+    body{ align-items:center; padding:24px 0;}
+    .app-shell{
+      min-height: min(820px, 92dvh);
+      border-radius:28px;
+      box-shadow: 0 30px 60px -25px rgba(43,36,32,0.25), 0 2px 8px rgba(43,36,32,0.06);
+      background: var(--cream);
+      overflow:hidden;
+    }
+  }
+
+  /* top bar: back button + progress */
+  .topbar{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    height:40px;
+    flex-shrink:0;
+  }
+  .back-btn{
+    width:36px; height:36px;
+    border-radius:50%;
+    border:none;
+    background: var(--cream-deep);
+    color: var(--ink);
+    font-size:18px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    opacity:0; pointer-events:none;
+    transition: opacity .25s ease, transform .15s ease;
+    flex-shrink:0;
+  }
+  .back-btn.visible{ opacity:1; pointer-events:auto; }
+  .back-btn:active{ transform: scale(0.9); }
+
+  .progress-blocks{
+    display:flex;
+    gap:5px;
+    flex:1;
+    flex-wrap:wrap;
+  }
+  .progress-blocks .blk{
+    width:16px; height:8px;
+    border-radius:3px;
+    background: var(--cream-deep);
+    transition: background .35s ease, transform .3s ease;
+  }
+  .progress-blocks .blk.filled{
+    background: var(--terracotta);
+  }
+  .progress-blocks .blk.just-filled{
+    animation: popBlock .4s ease;
+  }
+  @keyframes popBlock{
+    0%{ transform: scale(1); }
+    40%{ transform: scale(1.35); }
+    100%{ transform: scale(1); }
+  }
+
+  /* stage */
+  .stage{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    padding-top: 18px;
+  }
+  .screen{
+    opacity:0;
+    transform: translateY(14px);
+    transition: opacity .4s cubic-bezier(.22,.61,.36,1), transform .4s cubic-bezier(.22,.61,.36,1);
+  }
+  .screen.active{ opacity:1; transform:translateY(0); }
+  .screen.leaving{ opacity:0; transform: translateY(-14px); }
+  .screen.back-entering{ transform: translateY(-14px); }
+  .screen.back-entering.active{ transform: translateY(0); }
+
+  .eyebrow{
+    font-size:13px;
+    font-weight:600;
+    letter-spacing:.02em;
+    color: var(--terracotta);
+    margin:0 0 10px;
+  }
+  h1, h2{
+    font-family:'Fraunces', serif;
+    font-style:italic;
+    font-weight:500;
+    line-height:1.28;
+    margin:0 0 10px;
+    color:var(--ink);
+  }
+  h1{ font-size: clamp(26px, 6.5vw, 32px); }
+  h2{ font-size: clamp(22px, 5.6vw, 27px); }
+  p.help{
+    font-size:15px;
+    color: var(--ink-muted);
+    line-height:1.5;
+    margin:0 0 22px;
+  }
+  .lede{
+    font-size:16px;
+    line-height:1.6;
+    color: var(--ink);
+    margin: 0 0 8px;
+  }
+
+  textarea.answer{
+    width:100%;
+    min-height:120px;
+    resize:vertical;
+    border:2px solid var(--cream-deep);
+    background: var(--card);
+    border-radius:18px;
+    padding:16px 18px;
+    font-family:'Inter',sans-serif;
+    font-size:16px;
+    color:var(--ink);
+    line-height:1.5;
+    outline:none;
+    transition: border-color .2s ease, box-shadow .2s ease;
+  }
+  textarea.answer:focus{
+    border-color: var(--terracotta);
+    box-shadow: 0 0 0 5px var(--ring);
+  }
+  input.answer{
+    width:100%;
+    border:2px solid var(--cream-deep);
+    background: var(--card);
+    border-radius:999px;
+    padding:14px 20px;
+    font-family:'Inter',sans-serif;
+    font-size:16px;
+    color:var(--ink);
+    outline:none;
+    transition: border-color .2s ease, box-shadow .2s ease;
+  }
+  input.answer:focus{
+    border-color: var(--terracotta);
+    box-shadow: 0 0 0 5px var(--ring);
+  }
+  label.field-label{
+    display:block;
+    font-size:13px;
+    font-weight:600;
+    color:var(--ink-muted);
+    margin: 0 0 6px 4px;
+  }
+  .field{ margin-bottom:16px; }
+
+  .btn{
+    appearance:none;
+    border:none;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:16px;
+    border-radius:999px;
+    padding:15px 28px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    transition: transform .12s ease, box-shadow .2s ease, opacity .2s ease;
+  }
+  .btn-primary{
+    background: var(--terracotta);
+    color: #fff8f2;
+    box-shadow: 0 10px 22px -10px rgba(193,89,45,0.55);
+    width:100%;
+  }
+  .btn-primary:disabled{
+    opacity:.4;
+    cursor:not-allowed;
+    box-shadow:none;
+  }
+  .btn-primary.pressed{ animation: btnBounce .32s ease; }
+  @keyframes btnBounce{
+    0%{ transform:scale(1); }
+    45%{ transform:scale(0.94); }
+    100%{ transform:scale(1); }
+  }
+  .btn-primary:active{ transform:scale(0.97); }
+
+  .skip-link{
+    display:block;
+    text-align:center;
+    margin-top:14px;
+    color: var(--ink-muted);
+    font-size:14px;
+    text-decoration:underline;
+    cursor:pointer;
+    background:none; border:none; font-family:inherit;
+  }
+
+  .actions{ margin-top:22px; }
+
+  /* choice pills */
+  .choice-list{ display:flex; flex-direction:column; gap:12px; margin-top:6px; }
+  .choice-pill{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    background: var(--card);
+    border:2px solid var(--cream-deep);
+    border-radius:20px;
+    padding:16px 18px;
+    font-size:16.5px;
+    font-weight:500;
+    color:var(--ink);
+    cursor:pointer;
+    text-align:left;
+    transition: border-color .18s ease, transform .12s ease, background .18s ease;
+  }
+  .choice-pill .emoji{ font-size:22px; flex-shrink:0; }
+  .choice-pill:active{ transform: scale(0.98); }
+  .choice-pill:hover{ border-color: var(--terracotta); }
+  .choice-pill.selected{
+    border-color: var(--terracotta);
+    background: var(--terracotta-soft);
+    animation: btnBounce .32s ease;
+  }
+
+  .tag-row{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin: 4px 0 20px;
+  }
+  .tag{
+    background: var(--terracotta-soft);
+    color: var(--terracotta-dark);
+    font-size:12.5px;
+    font-weight:600;
+    padding:6px 13px;
+    border-radius:999px;
+  }
+
+  .center-copy{
+    text-align:center;
+  }
+  .center-copy .btn-primary{ margin-top:26px; }
+
+  .brandmark{
+    font-family:'Fraunces', serif;
+    font-style:italic;
+    font-weight:600;
+    font-size:15px;
+    color: var(--terracotta);
+    margin-bottom: 18px;
+  }
+
+  .conditional-field{
+    max-height:0;
+    overflow:hidden;
+    opacity:0;
+    transition: max-height .35s ease, opacity .3s ease, margin .35s ease;
+  }
+  .conditional-field.open{
+    max-height:160px;
+    opacity:1;
+    margin-top:16px;
+  }
+
+  .error-msg{
+    color: var(--terracotta-dark);
+    font-size:14px;
+    margin-top:10px;
+    display:none;
+  }
+  .error-msg.show{ display:block; }
+
+  .spinner{
+    width:16px; height:16px;
+    border-radius:50%;
+    border:2px solid rgba(255,255,255,0.4);
+    border-top-color:#fff;
+    animation: spin .7s linear infinite;
+    display:none;
+  }
+  .spinner.show{ display:inline-block; }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+
+  .final-emoji{ font-size:44px; margin-bottom:6px; }
+
+  ::selection{ background: var(--terracotta-soft); }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <div class="topbar">
+    <button class="back-btn" id="backBtn" aria-label="Go back">←</button>
+    <div class="progress-blocks" id="progressBlocks"></div>
+  </div>
+  <div class="stage" id="stage"></div>
+</div>
+
+<script type="module">
+// ---- Supabase config -------------------------------------------------
+// Replace these with your project's values (Settings -> API in Supabase).
+// The anon/public key is safe to expose in client-side code — access is
+// controlled by the Row Level Security policies in supabase/schema.sql.
+const SUPABASE_URL = "YOUR_SUPABASE_URL";
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+
+const isConfigured = !SUPABASE_URL.includes("YOUR_SUPABASE_URL") && !SUPABASE_ANON_KEY.includes("YOUR_SUPABASE_ANON_KEY");
+let supabase = null;
+
+// Loaded lazily via dynamic import so a blocked/offline CDN can never break
+// the form itself — submitResponse() falls back to localStorage if this
+// never resolves.
+async function initSupabase() {
+  if (!isConfigured) {
+    console.warn("hoblie form: Supabase isn't configured yet. See README.md — responses will be saved to localStorage only, as a backup.");
+    return;
+  }
+  try {
+    const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+    supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  } catch (e) {
+    console.error('hoblie form: could not load Supabase client, falling back to localStorage.', e);
+  }
+}
+const supabaseReady = initSupabase();
+
+// ---- state ------------------------------------------------------------
+const answers = {};
+const historyStack = [];
+let currentId = null;
+
+const TOTAL_BLOCKS = 10;
+const BLOCK_INDEX = {
+  intro: -1,
+  q_made: 0, q_not_yet_reason: 1, q_experience: 1, q_liked_most: 1, q_anything_else: 1,
+  bridge: 2,
+  q_first_time: 3, q_process_output: 4, q_surrender: 5, q_feeling: 6,
+  q_wall_reaction: 7, q_wall_display: 7,
+  q_call: 8,
+  contact: 9,
+  thankyou: 10
+};
+
+const stage = document.getElementById('stage');
+const backBtn = document.getElementById('backBtn');
+const progressBlocksEl = document.getElementById('progressBlocks');
+
+for (let i = 0; i < TOTAL_BLOCKS; i++) {
+  const b = document.createElement('div');
+  b.className = 'blk';
+  b.dataset.i = i;
+  progressBlocksEl.appendChild(b);
+}
+
+function updateProgress(id) {
+  const filled = BLOCK_INDEX[id] ?? 0;
+  const blocks = progressBlocksEl.querySelectorAll('.blk');
+  blocks.forEach((b, i) => {
+    const shouldFill = i <= filled && filled >= 0;
+    const wasFilled = b.classList.contains('filled');
+    b.classList.toggle('filled', shouldFill);
+    if (shouldFill && !wasFilled) {
+      b.classList.add('just-filled');
+      setTimeout(() => b.classList.remove('just-filled'), 400);
+    }
+  });
+  progressBlocksEl.style.visibility = id === 'intro' ? 'hidden' : 'visible';
+}
+
+backBtn.addEventListener('click', () => {
+  if (historyStack.length < 2) return;
+  historyStack.pop();
+  const prevId = historyStack[historyStack.length - 1];
+  render(prevId, { direction: 'back', pushHistory: false });
+});
+
+function goTo(id, opts = {}) {
+  if (opts.pushHistory !== false) historyStack.push(id);
+  render(id, { direction: 'forward' });
+}
+
+function render(id, { direction }) {
+  currentId = id;
+  backBtn.classList.toggle('visible', historyStack.length > 1 && id !== 'thankyou');
+  updateProgress(id);
+
+  const outgoing = stage.querySelector('.screen.active');
+  const build = () => {
+    stage.innerHTML = '';
+    const el = document.createElement('div');
+    el.className = 'screen';
+    if (direction === 'back') el.classList.add('back-entering');
+    stage.appendChild(el);
+    SCREENS[id](el);
+    requestAnimationFrame(() => el.classList.add('active'));
+  };
+
+  if (outgoing) {
+    outgoing.classList.remove('active');
+    outgoing.classList.add('leaving');
+    setTimeout(build, 220);
+  } else {
+    build();
+  }
+}
+
+function pressBounce(btn) {
+  btn.classList.remove('pressed');
+  void btn.offsetWidth;
+  btn.classList.add('pressed');
+}
+
+// ---- reusable screen builders ------------------------------------------
+
+function renderChoiceScreen(container, { eyebrow, question, help, options, onPick }) {
+  if (eyebrow) {
+    const e = document.createElement('p');
+    e.className = 'eyebrow'; e.textContent = eyebrow;
+    container.appendChild(e);
+  }
+  const h = document.createElement('h1');
+  h.textContent = question;
+  container.appendChild(h);
+  if (help) {
+    const p = document.createElement('p');
+    p.className = 'help'; p.textContent = help;
+    container.appendChild(p);
+  }
+  const list = document.createElement('div');
+  list.className = 'choice-list';
+  options.forEach(opt => {
+    const pill = document.createElement('button');
+    pill.className = 'choice-pill';
+    pill.innerHTML = (opt.emoji ? `<span class="emoji">${opt.emoji}</span>` : '') + `<span>${opt.label}</span>`;
+    pill.addEventListener('click', () => {
+      list.querySelectorAll('.choice-pill').forEach(p => p.classList.remove('selected'));
+      pill.classList.add('selected');
+      setTimeout(() => onPick(opt.value), 320);
+    });
+    list.appendChild(pill);
+  });
+  container.appendChild(list);
+}
+
+function renderTextScreen(container, { eyebrow, question, help, key, placeholder, optional, nextId, onNext }) {
+  if (eyebrow) {
+    const e = document.createElement('p');
+    e.className = 'eyebrow'; e.textContent = eyebrow;
+    container.appendChild(e);
+  }
+  const h = document.createElement('h1');
+  h.textContent = question;
+  container.appendChild(h);
+  if (help) {
+    const p = document.createElement('p');
+    p.className = 'help'; p.textContent = help;
+    container.appendChild(p);
+  }
+  const ta = document.createElement('textarea');
+  ta.className = 'answer';
+  ta.placeholder = placeholder || 'Type your answer…';
+  ta.value = answers[key] || '';
+  container.appendChild(ta);
+
+  const actions = document.createElement('div');
+  actions.className = 'actions';
+  const btn = document.createElement('button');
+  btn.className = 'btn btn-primary';
+  btn.textContent = 'Continue';
+  btn.disabled = !optional && !ta.value.trim();
+  actions.appendChild(btn);
+  container.appendChild(actions);
+
+  if (!optional) {
+    ta.addEventListener('input', () => { btn.disabled = !ta.value.trim(); });
+  }
+
+  const proceed = () => {
+    answers[key] = ta.value.trim();
+    pressBounce(btn);
+    setTimeout(() => (onNext ? onNext() : goTo(nextId)), 160);
+  };
+  btn.addEventListener('click', proceed);
+
+  if (optional) {
+    const skip = document.createElement('button');
+    skip.className = 'skip-link';
+    skip.textContent = 'Skip this one';
+    skip.addEventListener('click', () => {
+      answers[key] = ta.value.trim();
+      onNext ? onNext() : goTo(nextId);
+    });
+    container.appendChild(skip);
+  }
+
+  setTimeout(() => ta.focus(), 350);
+}
+
+// ---- screens ------------------------------------------------------------
+
+const SCREENS = {
+  intro(container) {
+    container.classList.add('center-copy');
+    const mark = document.createElement('p');
+    mark.className = 'brandmark';
+    mark.textContent = 'hoblie';
+    container.appendChild(mark);
+
+    const h = document.createElement('h1');
+    h.textContent = "Hey! You tried the hoblie Aesthetic Clay Mirror kit at Samridhi's Co Create Jam — got 2 minutes to help us out?";
+    container.appendChild(h);
+
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-primary';
+    btn.textContent = "Let's go";
+    btn.style.marginTop = '24px';
+    btn.addEventListener('click', () => { pressBounce(btn); setTimeout(() => goTo('q_made'), 160); });
+    container.appendChild(btn);
+  },
+
+  q_made(container) {
+    renderChoiceScreen(container, {
+      eyebrow: 'The clay mirror kit',
+      question: 'Have you made your Aesthetic Clay Mirror yet?',
+      options: [
+        { label: 'Yes, I made it!', value: 'yes' },
+        { label: 'Not yet', value: 'not_yet' }
+      ],
+      onPick(value) {
+        answers.made_kit = value;
+        goTo(value === 'yes' ? 'q_experience' : 'q_not_yet_reason');
+      }
+    });
+  },
+
+  q_not_yet_reason(container) {
+    renderTextScreen(container, {
+      eyebrow: 'No pressure at all',
+      question: "No worries — what's held you back?",
+      help: "Totally fine either way, we're just curious.",
+      key: 'not_yet_reason',
+      placeholder: "e.g. haven't had time yet, wasn't sure where to start…",
+      nextId: 'bridge'
+    });
+  },
+
+  q_experience(container) {
+    renderChoiceScreen(container, {
+      eyebrow: 'The clay mirror kit',
+      question: 'How was the experience?',
+      options: [
+        { emoji: '😍', label: 'Loved it', value: 'loved' },
+        { emoji: '🙂', label: 'It was fine', value: 'fine' },
+        { emoji: '😕', label: 'Not really for me', value: 'not_for_me' }
+      ],
+      onPick(value) {
+        answers.experience = value;
+        goTo('q_liked_most');
+      }
+    });
+  },
+
+  q_liked_most(container) {
+    renderTextScreen(container, {
+      question: 'What did you like most about it?',
+      key: 'liked_most',
+      placeholder: 'The colours, the process, how it turned out…',
+      nextId: 'q_anything_else'
+    });
+  },
+
+  q_anything_else(container) {
+    renderTextScreen(container, {
+      question: 'Anything else you’d want to tell us?',
+      help: 'Totally optional — skip if nothing comes to mind.',
+      key: 'anything_else',
+      optional: true,
+      placeholder: 'Anything at all…',
+      nextId: 'bridge'
+    });
+  },
+
+  bridge(container) {
+    container.classList.add('center-copy');
+    const mark = document.createElement('p');
+    mark.className = 'brandmark';
+    mark.textContent = 'hoblie';
+    container.appendChild(mark);
+
+    const h = document.createElement('h2');
+    h.textContent = 'Thank you so much — that genuinely helps.';
+    container.appendChild(h);
+
+    const p = document.createElement('p');
+    p.className = 'lede';
+    p.textContent = "We'd love 2 more minutes from you. We're building something new at hoblie, and we want a few hundred makers like you to help us shape it — think of yourself as an insider to great DIY, made in India, for the world.";
+    container.appendChild(p);
+
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-primary';
+    btn.textContent = "I'm in";
+    btn.style.marginTop = '22px';
+    btn.addEventListener('click', () => { pressBounce(btn); setTimeout(() => goTo('q_first_time'), 160); });
+    container.appendChild(btn);
+  },
+
+  q_first_time(container) {
+    renderTextScreen(container, {
+      eyebrow: 'Take your time',
+      question: 'Think back — when was the first time in your life you did something like this (making, crafting, building with your hands)? What was going on for you around that time?',
+      key: 'first_time_story',
+      placeholder: 'Whatever comes to mind first…',
+      nextId: 'q_process_output'
+    });
+  },
+
+  q_process_output(container) {
+    renderTextScreen(container, {
+      question: 'After you finish making something, what do you usually find yourself telling people — what you made, or something you figured out while doing it?',
+      key: 'process_or_output',
+      placeholder: 'Either, neither, both…',
+      nextId: 'q_surrender'
+    });
+  },
+
+  q_surrender(container) {
+    renderTextScreen(container, {
+      question: 'Was there a moment while making it where you got a bit stuck, and then it just clicked? What was that like?',
+      key: 'surrender_moment',
+      placeholder: 'Describe that moment…',
+      nextId: 'q_feeling'
+    });
+  },
+
+  q_feeling(container) {
+    renderTextScreen(container, {
+      question: 'How did making it feel, in your own words?',
+      key: 'feeling',
+      placeholder: 'No wrong answers here…',
+      nextId: 'q_wall_reaction'
+    });
+  },
+
+  q_wall_reaction(container) {
+    renderChoiceScreen(container, {
+      eyebrow: 'A little idea',
+      question: 'Imagine having your own little museum — a wall of fame — made entirely of things you built yourself. Would you want something like that?',
+      options: [
+        { emoji: '😮', label: 'Definitely', value: 'definitely' },
+        { emoji: '🤔', label: 'Maybe', value: 'maybe' },
+        { emoji: '🙅', label: 'Not really', value: 'not_really' }
+      ],
+      onPick(value) {
+        answers.wall_reaction = value;
+        goTo('q_wall_display');
+      }
+    });
+  },
+
+  q_wall_display(container) {
+    renderTextScreen(container, {
+      question: "Each piece of the wall showcases any DIY activity you've done, or things from your interests, lifestyle, dreams and desires, and more. Tell us what things you'd like your DIY wall to display.",
+      key: 'wall_display',
+      placeholder: 'Things you’d want on your wall…',
+      nextId: 'q_call'
+    });
+  },
+
+  q_call(container) {
+    const eyebrow = document.createElement('p');
+    eyebrow.className = 'eyebrow'; eyebrow.textContent = 'Almost done';
+    container.appendChild(eyebrow);
+
+    const h = document.createElement('h1');
+    h.textContent = 'Would you be up for a quick 15-min call sometime so we can chat more?';
+    container.appendChild(h);
+    const help = document.createElement('p');
+    help.className = 'help'; help.textContent = 'Totally optional.';
+    container.appendChild(help);
+
+    const list = document.createElement('div');
+    list.className = 'choice-list';
+    container.appendChild(list);
+
+    const timeWrap = document.createElement('div');
+    timeWrap.className = 'conditional-field';
+    timeWrap.innerHTML = `<label class="field-label">Best time to reach you</label>`;
+    const timeInput = document.createElement('input');
+    timeInput.className = 'answer';
+    timeInput.placeholder = 'e.g. weekday evenings, weekends…';
+    timeWrap.appendChild(timeInput);
+    container.appendChild(timeWrap);
+
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-primary';
+    btn.textContent = 'Continue';
+    btn.disabled = true;
+    actions.appendChild(btn);
+    container.appendChild(actions);
+
+    let picked = null;
+    [{ label: 'Yes, happy to chat', value: 'yes' }, { label: 'No, not this time', value: 'no' }].forEach(opt => {
+      const pill = document.createElement('button');
+      pill.className = 'choice-pill';
+      pill.textContent = opt.label;
+      pill.addEventListener('click', () => {
+        list.querySelectorAll('.choice-pill').forEach(p => p.classList.remove('selected'));
+        pill.classList.add('selected');
+        picked = opt.value;
+        btn.disabled = false;
+        timeWrap.classList.toggle('open', picked === 'yes');
+        if (picked === 'yes') setTimeout(() => timeInput.focus(), 380);
+      });
+      list.appendChild(pill);
+    });
+
+    btn.addEventListener('click', () => {
+      answers.call_interest = picked === 'yes';
+      answers.call_best_time = picked === 'yes' ? timeInput.value.trim() : '';
+      pressBounce(btn);
+      setTimeout(() => goTo('contact'), 160);
+    });
+  },
+
+  contact(container) {
+    const mark = document.createElement('p');
+    mark.className = 'brandmark'; mark.textContent = 'hoblie';
+    container.appendChild(mark);
+
+    const h = document.createElement('h2');
+    h.textContent = 'Thank you for being part of this.';
+    container.appendChild(h);
+    const p = document.createElement('p');
+    p.className = 'lede';
+    p.textContent = 'We want to say thanks properly — where should we send something small your way?';
+    p.style.marginBottom = '20px';
+    container.appendChild(p);
+
+    const fields = [
+      { key: 'name', label: 'Name', placeholder: 'Your name', required: true },
+      { key: 'phone', label: 'Phone number', placeholder: 'For WhatsApp / delivery', required: true, type: 'tel' },
+      { key: 'email', label: 'Email (optional)', placeholder: 'you@example.com', required: false, type: 'email' },
+      { key: 'address', label: 'Address (optional)', placeholder: 'So we can send the gift over', required: false }
+    ];
+    const inputs = {};
+    fields.forEach(f => {
+      const wrap = document.createElement('div');
+      wrap.className = 'field';
+      const label = document.createElement('label');
+      label.className = 'field-label'; label.textContent = f.label;
+      wrap.appendChild(label);
+      const input = document.createElement('input');
+      input.className = 'answer';
+      input.type = f.type || 'text';
+      input.placeholder = f.placeholder;
+      input.value = answers[f.key] || '';
+      wrap.appendChild(input);
+      inputs[f.key] = input;
+      container.appendChild(wrap);
+    });
+
+    const closing = document.createElement('p');
+    closing.className = 'help';
+    closing.style.marginTop = '4px';
+    closing.textContent = "We'll also be inviting you into our inside community and future product-experience crews soon — keep an eye on WhatsApp.";
+    container.appendChild(closing);
+
+    const errorMsg = document.createElement('p');
+    errorMsg.className = 'error-msg';
+    errorMsg.textContent = "Hmm, that didn't save — mind trying again?";
+    container.appendChild(errorMsg);
+
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-primary';
+    btn.innerHTML = `<span class="spinner"></span><span class="btn-label">Done</span>`;
+    btn.disabled = true;
+    actions.appendChild(btn);
+    container.appendChild(actions);
+
+    function checkValid() {
+      btn.disabled = !inputs.name.value.trim() || !inputs.phone.value.trim();
+    }
+    inputs.name.addEventListener('input', checkValid);
+    inputs.phone.addEventListener('input', checkValid);
+
+    btn.addEventListener('click', async () => {
+      fields.forEach(f => { answers[f.key] = inputs[f.key].value.trim(); });
+      pressBounce(btn);
+      btn.disabled = true;
+      btn.querySelector('.spinner').classList.add('show');
+      btn.querySelector('.btn-label').textContent = 'Saving…';
+      errorMsg.classList.remove('show');
+
+      const ok = await submitResponse();
+      if (ok) {
+        goTo('thankyou');
+      } else {
+        errorMsg.classList.add('show');
+        btn.disabled = false;
+        btn.querySelector('.spinner').classList.remove('show');
+        btn.querySelector('.btn-label').textContent = 'Done';
+      }
+    });
+  },
+
+  thankyou(container) {
+    container.classList.add('center-copy');
+    const e = document.createElement('div');
+    e.className = 'final-emoji'; e.textContent = '🎉';
+    container.appendChild(e);
+    const h = document.createElement('h1');
+    h.textContent = "You're all set — thank you!";
+    container.appendChild(h);
+    const p = document.createElement('p');
+    p.className = 'lede';
+    p.textContent = "We'll be in touch on WhatsApp soon. Go make something nice today.";
+    container.appendChild(p);
+  }
+};
+
+async function submitResponse() {
+  await supabaseReady;
+  const payload = {
+    made_kit: answers.made_kit || null,
+    not_yet_reason: answers.not_yet_reason || null,
+    experience: answers.experience || null,
+    liked_most: answers.liked_most || null,
+    anything_else: answers.anything_else || null,
+    first_time_story: answers.first_time_story || null,
+    process_or_output: answers.process_or_output || null,
+    surrender_moment: answers.surrender_moment || null,
+    feeling: answers.feeling || null,
+    wall_reaction: answers.wall_reaction || null,
+    wall_display: answers.wall_display || null,
+    call_interest: typeof answers.call_interest === 'boolean' ? answers.call_interest : null,
+    call_best_time: answers.call_best_time || null,
+    name: answers.name || null,
+    phone: answers.phone || null,
+    email: answers.email || null,
+    address: answers.address || null
+  };
+
+  if (!isConfigured || !supabase) {
+    try {
+      const backup = JSON.parse(localStorage.getItem('hoblie_responses') || '[]');
+      backup.push({ ...payload, saved_at: new Date().toISOString() });
+      localStorage.setItem('hoblie_responses', JSON.stringify(backup));
+    } catch (e) { console.error(e); }
+    return true;
+  }
+
+  const { error } = await supabase.from('responses').insert([payload]);
+  if (error) {
+    console.error('Supabase insert failed:', error);
+    return false;
+  }
+  return true;
+}
+
+// kick off
+goTo('intro');
+</script>
+</body>
+</html>
