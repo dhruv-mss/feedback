@@ -60,7 +60,16 @@ client from a CDN at runtime.
   console warning is logged) so nothing is lost while you're testing.
 - Nothing in these files is a secret except the admin password, which only
   lives in Supabase Auth (not in any file here).
-- Partial completions are saved to the respondent's own browser
-  (`localStorage`) as they go, so closing the tab and coming back resumes
-  where they left off. That data only reaches Supabase if they finish the
-  form; someone who never returns leaves nothing in the database.
+- Answers save as the respondent goes, not just at the end. The moment
+  someone answers their first question, a row is created in Supabase; every
+  screen after that upserts the same row (matched by a random id generated
+  in their browser), so someone who closes the tab halfway still leaves
+  real, partial data behind. That row is marked `completed = false` until
+  they hit "Done" on the final screen. `admin.html` shows in-progress
+  responses with an "In progress (at ...)" tag so you can see where people
+  are dropping off.
+- This means the anon key can update rows as well as insert them, but only
+  rows where `completed = false` (see the update policy in `schema.sql`).
+  Anon has no read access, so in practice nobody but the browser that
+  created a row can find its id to update it. `localStorage` is still used
+  too, purely so a returning visitor resumes on the same device.

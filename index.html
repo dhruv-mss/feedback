@@ -418,6 +418,18 @@ let currentId = null;
 let branchName = null; // 'made' | 'not_yet'
 let startedAt = Date.now();
 
+// Identifies this respondent's row in Supabase so repeated partial saves
+// upsert the same row instead of creating duplicates. Generated once per
+// session and carried through resume via saveState()/loadState().
+function generateId() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+}
+let sessionId = null;
+
 // Every screen the respondent can actually see, in order, per branch.
 // The progress bar's length always matches whichever of these is active.
 const MADE_PATH = [
@@ -438,7 +450,7 @@ const STORAGE_KEY = 'hoblie_feedback_progress_v2';
 function saveState() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      answers, historyStack, currentId, shuffleCache, startedAt, branchName
+      answers, historyStack, currentId, shuffleCache, startedAt, branchName, sessionId
     }));
   } catch (e) { /* ignore quota/private-mode errors */ }
 }
@@ -507,6 +519,7 @@ function render(id, { direction }) {
   backBtn.classList.toggle('visible', historyStack.length > 1 && id !== 'thankyou');
   updateProgress(id);
   if (id === 'thankyou') clearState(); else saveState();
+  if (id !== 'intro' && id !== 'thankyou') syncProgress();
 
   const outgoing = stage.querySelector('.screen.active');
   const build = () => {
@@ -1253,9 +1266,12 @@ const SCREENS = {
   }
 };
 
-async function submitResponse() {
-  await supabaseReady;
-  const payload = {
+function buildPayload(completed) {
+  return {
+    id: sessionId,
+    completed,
+    last_screen: currentId,
+    updated_at: new Date().toISOString(),
     branch: answers.branch || null,
     made_kit: answers.made_kit || null,
     experience: answers.experience || null,
@@ -1292,6 +1308,27 @@ async function submitResponse() {
     address: answers.address || null,
     completion_seconds: typeof answers.completion_seconds === 'number' ? answers.completion_seconds : null
   };
+}
+
+// Fire-and-forget partial save: upserts the same row (matched by
+// sessionId) every time the respondent moves to a new screen, so
+// someone who closes the tab halfway still leaves real data behind.
+// Never blocks navigation and never surfaces errors to the user.
+async function syncProgress() {
+  if (!isConfigured) return;
+  try {
+    await supabaseReady;
+    if (!supabase) return;
+    const { error } = await supabase.from('responses').upsert([buildPayload(false)], { onConflict: 'id' });
+    if (error) console.error('hoblie form: partial save failed, will retry on next screen.', error);
+  } catch (e) {
+    console.error('hoblie form: partial save failed, will retry on next screen.', e);
+  }
+}
+
+async function submitResponse() {
+  await supabaseReady;
+  const payload = buildPayload(true);
 
   if (!isConfigured || !supabase) {
     try {
@@ -1302,9 +1339,9 @@ async function submitResponse() {
     return true;
   }
 
-  const { error } = await supabase.from('responses').insert([payload]);
+  const { error } = await supabase.from('responses').upsert([payload], { onConflict: 'id' });
   if (error) {
-    console.error('Supabase insert failed:', error);
+    console.error('Supabase upsert failed:', error);
     return false;
   }
   return true;
@@ -1323,11 +1360,13 @@ async function submitResponse() {
     branchName = saved.branchName || null;
     currentPath = branchName === 'not_yet' ? NOT_YET_PATH : MADE_PATH;
     startedAt = saved.startedAt || Date.now();
+    sessionId = saved.sessionId || generateId();
     render(saved.currentId, { direction: 'forward' });
     return;
   }
 
   startedAt = Date.now();
+  sessionId = generateId();
   goTo('intro');
 })();
 </script>
