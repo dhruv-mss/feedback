@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<title>hoblie — a quick thing</title>
+<title>hoblie - a quick thing</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -270,6 +270,32 @@
     animation: btnBounce .32s ease;
   }
 
+  /* chips: same look as choice-pill, smaller and inline-wrapping */
+  .chip-row{ display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+  .chip{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:44px;
+    background: var(--card);
+    border:2px solid var(--bg-deep);
+    border-radius:999px;
+    padding:9px 16px;
+    font-size:14.5px;
+    font-weight:500;
+    color:var(--ink);
+    cursor:pointer;
+    text-align:center;
+    transition: border-color .18s ease, transform .12s ease, background .18s ease;
+  }
+  .chip:active{ transform: scale(0.96); }
+  .chip:hover{ border-color: var(--pink); }
+  .chip.selected{
+    border-color: var(--pink);
+    background: var(--pink-soft);
+    animation: btnBounce .32s ease;
+  }
+
   .center-copy{
     text-align:center;
   }
@@ -359,7 +385,7 @@
 <script type="module">
 // ---- Supabase config -------------------------------------------------
 // Replace these with your project's values (Settings -> API in Supabase).
-// The anon/public key is safe to expose in client-side code — access is
+// The anon/public key is safe to expose in client-side code: access is
 // controlled by the Row Level Security policies in supabase/schema.sql.
 const SUPABASE_URL = "https://rjasrucloiozbvvmouuu.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_nToADn1Ma-2ILahQkOf64w_QTSKiRG8";
@@ -368,11 +394,11 @@ const isConfigured = !SUPABASE_URL.includes("YOUR_SUPABASE_URL") && !SUPABASE_AN
 let supabase = null;
 
 // Loaded lazily via dynamic import so a blocked/offline CDN can never break
-// the form itself — submitResponse() falls back to localStorage if this
+// the form itself: submitResponse() falls back to localStorage if this
 // never resolves.
 async function initSupabase() {
   if (!isConfigured) {
-    console.warn("hoblie form: Supabase isn't configured yet. See README.md — responses will be saved to localStorage only, as a backup.");
+    console.warn("hoblie form: Supabase isn't configured yet. See README.md. Responses will be saved to localStorage only, as a backup.");
     return;
   }
   try {
@@ -387,36 +413,74 @@ const supabaseReady = initSupabase();
 // ---- state ------------------------------------------------------------
 const answers = {};
 const historyStack = [];
+const shuffleCache = {};
 let currentId = null;
+let branchName = null; // 'made' | 'not_yet'
+let startedAt = Date.now();
 
-const TOTAL_BLOCKS = 10;
-const BLOCK_INDEX = {
-  intro: -1,
-  q_made: 0, q_not_yet_reason: 1, q_experience: 1, q_liked_most: 1, q_anything_else: 1,
-  bridge: 2,
-  q_first_time: 3, q_process_output: 4, q_surrender: 5, q_feeling: 6,
-  q_wall_reaction: 7, q_wall_display: 7,
-  q_call: 8,
-  contact: 9,
-  thankyou: 10
-};
+// Every screen the respondent can actually see, in order, per branch.
+// The progress bar's length always matches whichever of these is active.
+const MADE_PATH = [
+  'q_made', 'q_experience', 'q_liked_most', 'q_where_now', 'q_time_taken', 'q_alone_or_with',
+  'bridge', 'q_point_of_entry', 'q_process_output', 'q_what_else_make', 'q_stuck_moment',
+  'q_how_it_felt', 'q_wall_1', 'q_wall_2', 'q_call', 'q_anything_else', 'contact'
+];
+const NOT_YET_PATH = [
+  'q_made', 'd1', 'd2', 'd3',
+  'bridge', 'q_point_of_entry', 'q_process_output', 'q_what_else_make',
+  'q_wall_1', 'q_wall_2', 'q_call', 'q_anything_else', 'contact'
+];
+let currentPath = MADE_PATH;
+
+// ---- save / resume progress -------------------------------------------
+const STORAGE_KEY = 'hoblie_feedback_progress_v2';
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      answers, historyStack, currentId, shuffleCache, startedAt, branchName
+    }));
+  } catch (e) { /* ignore quota/private-mode errors */ }
+}
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+function clearState() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) { /* ignore */ }
+}
 
 const stage = document.getElementById('stage');
 const backBtn = document.getElementById('backBtn');
 const progressBlocksEl = document.getElementById('progressBlocks');
 
-for (let i = 0; i < TOTAL_BLOCKS; i++) {
-  const b = document.createElement('div');
-  b.className = 'blk';
-  b.dataset.i = i;
-  progressBlocksEl.appendChild(b);
+let renderedBlockCount = 0;
+function ensureBlockCount(n) {
+  if (renderedBlockCount === n) return;
+  progressBlocksEl.innerHTML = '';
+  for (let i = 0; i < n; i++) {
+    const b = document.createElement('div');
+    b.className = 'blk';
+    progressBlocksEl.appendChild(b);
+  }
+  renderedBlockCount = n;
 }
 
 function updateProgress(id) {
-  const filled = BLOCK_INDEX[id] ?? 0;
+  if (id === 'intro') {
+    progressBlocksEl.style.visibility = 'hidden';
+    return;
+  }
+  progressBlocksEl.style.visibility = 'visible';
+  const total = currentPath.length;
+  ensureBlockCount(total);
+  let idx = id === 'thankyou' ? total - 1 : currentPath.indexOf(id);
+  if (idx === -1) idx = 0;
   const blocks = progressBlocksEl.querySelectorAll('.blk');
   blocks.forEach((b, i) => {
-    const shouldFill = i <= filled && filled >= 0;
+    const shouldFill = i <= idx;
     const wasFilled = b.classList.contains('filled');
     b.classList.toggle('filled', shouldFill);
     if (shouldFill && !wasFilled) {
@@ -424,14 +488,13 @@ function updateProgress(id) {
       setTimeout(() => b.classList.remove('just-filled'), 400);
     }
   });
-  progressBlocksEl.style.visibility = id === 'intro' ? 'hidden' : 'visible';
 }
 
 backBtn.addEventListener('click', () => {
   if (historyStack.length < 2) return;
   historyStack.pop();
   const prevId = historyStack[historyStack.length - 1];
-  render(prevId, { direction: 'back', pushHistory: false });
+  render(prevId, { direction: 'back' });
 });
 
 function goTo(id, opts = {}) {
@@ -443,6 +506,7 @@ function render(id, { direction }) {
   currentId = id;
   backBtn.classList.toggle('visible', historyStack.length > 1 && id !== 'thankyou');
   updateProgress(id);
+  if (id === 'thankyou') clearState(); else saveState();
 
   const outgoing = stage.querySelector('.screen.active');
   const build = () => {
@@ -485,6 +549,16 @@ function buildTicker(items, color) {
   }
   wrap.appendChild(inner);
   return wrap;
+}
+
+function shuffleWithPinnedLast(values, pinnedLast) {
+  const pinned = values.filter(v => pinnedLast.includes(v));
+  const rest = values.filter(v => !pinnedLast.includes(v));
+  for (let i = rest.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [rest[i], rest[j]] = [rest[j], rest[i]];
+  }
+  return [...rest, ...pinned];
 }
 
 // ---- reusable screen builders ------------------------------------------
@@ -573,6 +647,114 @@ function renderTextScreen(container, { eyebrow, question, help, key, placeholder
   setTimeout(() => ta.focus(), 350);
 }
 
+// Single- or multi-select chips/pills, with an optional one-line or open
+// follow-up field. Covers every "tap first, write only if you want" screen.
+function renderSelectScreen(container, {
+  eyebrow, question, help, options, shuffleKey, pinnedLast = [],
+  variant = 'pill', multi = false, required = false,
+  valueKey, orderKey, followUp, nextId
+}) {
+  if (eyebrow) {
+    const e = document.createElement('p');
+    e.className = 'eyebrow'; e.textContent = eyebrow;
+    container.appendChild(e);
+  }
+  const h = document.createElement('h1');
+  h.textContent = question;
+  container.appendChild(h);
+  if (help) {
+    const p = document.createElement('p');
+    p.className = 'help'; p.textContent = help;
+    container.appendChild(p);
+  }
+
+  let displayOptions = options;
+  if (shuffleKey) {
+    if (!shuffleCache[shuffleKey]) {
+      shuffleCache[shuffleKey] = shuffleWithPinnedLast(options.map(o => o.value), pinnedLast);
+    }
+    const order = shuffleCache[shuffleKey];
+    displayOptions = order.map(v => options.find(o => o.value === v));
+  }
+
+  const existing = answers[valueKey];
+  const selected = multi ? new Set(Array.isArray(existing) ? existing : []) : (existing || null);
+  let singleSelected = multi ? null : selected;
+
+  const list = document.createElement('div');
+  list.className = variant === 'chip' ? 'chip-row' : 'choice-list';
+  container.appendChild(list);
+
+  const actions = document.createElement('div');
+  actions.className = 'actions';
+  const continueBtn = document.createElement('button');
+  continueBtn.className = 'btn btn-primary';
+  continueBtn.textContent = 'Continue';
+
+  let followUpEl = null;
+  let followUpWrap = null;
+  if (followUp) {
+    followUpWrap = document.createElement('div');
+    followUpWrap.className = followUp.revealOnSelect ? 'conditional-field' : 'field';
+    const label = document.createElement('label');
+    label.className = 'field-label';
+    label.textContent = followUp.label;
+    followUpWrap.appendChild(label);
+    followUpEl = document.createElement(followUp.type === 'textarea' ? 'textarea' : 'input');
+    followUpEl.className = 'answer';
+    if (followUp.type === 'textarea') followUpEl.style.minHeight = '90px';
+    followUpEl.placeholder = followUp.placeholder || '';
+    followUpEl.value = answers[followUp.key] || '';
+    followUpWrap.appendChild(followUpEl);
+  }
+
+  function hasSelection() {
+    return multi ? selected.size > 0 : !!singleSelected;
+  }
+  function refreshContinue() {
+    continueBtn.disabled = required && !hasSelection();
+  }
+
+  displayOptions.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = variant === 'chip' ? 'chip' : 'choice-pill';
+    btn.textContent = opt.label;
+    if (multi ? selected.has(opt.value) : singleSelected === opt.value) btn.classList.add('selected');
+    btn.addEventListener('click', () => {
+      if (multi) {
+        if (selected.has(opt.value)) { selected.delete(opt.value); btn.classList.remove('selected'); }
+        else { selected.add(opt.value); btn.classList.add('selected'); }
+      } else {
+        list.querySelectorAll(`.${variant === 'chip' ? 'chip' : 'choice-pill'}`).forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        singleSelected = opt.value;
+        if (followUp && followUp.revealOnSelect) {
+          followUpWrap.classList.add('open');
+          setTimeout(() => followUpEl.focus(), 380);
+        }
+      }
+      refreshContinue();
+    });
+    list.appendChild(btn);
+  });
+
+  if (followUp && followUp.revealOnSelect && singleSelected) followUpWrap.classList.add('open');
+  if (followUpWrap) container.appendChild(followUpWrap);
+
+  refreshContinue();
+  actions.appendChild(continueBtn);
+  container.appendChild(actions);
+
+  continueBtn.addEventListener('click', () => {
+    answers[valueKey] = multi ? Array.from(selected) : singleSelected;
+    if (orderKey) answers[orderKey] = displayOptions.map(o => o.value);
+    if (followUp) answers[followUp.key] = followUpEl.value.trim();
+    pressBounce(continueBtn);
+    const dest = typeof nextId === 'function' ? nextId(answers) : nextId;
+    setTimeout(() => goTo(dest), 160);
+  });
+}
+
 // ---- screens ------------------------------------------------------------
 
 const SCREENS = {
@@ -585,14 +767,23 @@ const SCREENS = {
     container.appendChild(mark);
 
     const h = document.createElement('h1');
-    h.textContent = "Hey! You tried the hoblie Aesthetic Clay Mirror kit at Samridhi's Co Create Jam — got 2 minutes to help us out?";
+    h.textContent = "Hey! You tried the hoblie Aesthetic Clay Mirror kit at Samridhi's Co Create Jam. Got 5 minutes to help us out?";
     container.appendChild(h);
+
+    const p = document.createElement('p');
+    p.className = 'lede';
+    p.textContent = "You're one of about thirty people who've actually made this. We're building the next one and we'd rather ask you than guess.";
+    container.appendChild(p);
 
     const btn = document.createElement('button');
     btn.className = 'btn btn-primary';
     btn.textContent = "Let's go";
-    btn.style.marginTop = '24px';
-    btn.addEventListener('click', () => { pressBounce(btn); setTimeout(() => goTo('q_made'), 160); });
+    btn.style.marginTop = '20px';
+    btn.addEventListener('click', () => {
+      startedAt = Date.now();
+      pressBounce(btn);
+      setTimeout(() => goTo('q_made'), 160);
+    });
     container.appendChild(btn);
   },
 
@@ -606,26 +797,18 @@ const SCREENS = {
       ],
       onPick(value) {
         answers.made_kit = value;
-        goTo(value === 'yes' ? 'q_experience' : 'q_not_yet_reason');
+        answers.branch = value === 'yes' ? 'made' : 'not_yet';
+        branchName = answers.branch;
+        currentPath = value === 'yes' ? MADE_PATH : NOT_YET_PATH;
+        goTo(value === 'yes' ? 'q_experience' : 'd1');
       }
-    });
-  },
-
-  q_not_yet_reason(container) {
-    renderTextScreen(container, {
-      eyebrow: 'No pressure at all',
-      question: "No worries — what's held you back?",
-      help: "Totally fine either way, we're just curious.",
-      key: 'not_yet_reason',
-      placeholder: "e.g. haven't had time yet, wasn't sure where to start…",
-      nextId: 'bridge'
     });
   },
 
   q_experience(container) {
     renderChoiceScreen(container, {
       eyebrow: 'The clay mirror kit',
-      question: 'How was the experience?',
+      question: 'How was it?',
       options: [
         { emoji: '😍', label: 'Loved it', value: 'loved' },
         { emoji: '🙂', label: 'It was fine', value: 'fine' },
@@ -640,20 +823,84 @@ const SCREENS = {
 
   q_liked_most(container) {
     renderTextScreen(container, {
-      question: 'What did you like most about it?',
+      question: 'What was the best bit?',
       key: 'liked_most',
-      placeholder: 'The colours, the process, how it turned out…',
-      nextId: 'q_anything_else'
+      optional: true,
+      placeholder: 'The colours, the process, how it turned out...',
+      nextId: 'q_where_now'
     });
   },
 
-  q_anything_else(container) {
+  q_where_now(container) {
+    renderChoiceScreen(container, {
+      question: 'Where is it now?',
+      options: [
+        { label: 'Out where I can see it', value: 'out_visible' },
+        { label: 'Put away somewhere', value: 'put_away' },
+        { label: 'Gave it to someone', value: 'gave_away' },
+        { label: 'Honestly, not sure', value: 'not_sure' }
+      ],
+      onPick(value) { answers.where_now = value; goTo('q_time_taken'); }
+    });
+  },
+
+  q_time_taken(container) {
+    renderChoiceScreen(container, {
+      question: 'Roughly how long did it take?',
+      options: [
+        { label: 'Under 30 mins', value: 'under_30' },
+        { label: '30 mins to an hour', value: '30_to_60' },
+        { label: 'A couple of hours', value: 'couple_hours' },
+        { label: 'Came back to it over a few days', value: 'few_days' }
+      ],
+      onPick(value) { answers.time_taken = value; goTo('q_alone_or_with'); }
+    });
+  },
+
+  q_alone_or_with(container) {
+    renderChoiceScreen(container, {
+      question: 'Did you make it alone, or with someone?',
+      options: [
+        { label: 'On my own', value: 'alone' },
+        { label: 'With someone else', value: 'with_someone' },
+        { label: 'Around people, but doing my own thing', value: 'around_people' }
+      ],
+      onPick(value) { answers.alone_or_with = value; goTo('bridge'); }
+    });
+  },
+
+  d1(container) {
+    renderChoiceScreen(container, {
+      question: "No stress. What's it waiting on?",
+      options: [
+        { label: 'No time yet', value: 'no_time' },
+        { label: 'Waiting for the right mood', value: 'right_mood' },
+        { label: 'Not sure how to start', value: 'not_sure_how' },
+        { label: 'Lost interest a bit', value: 'lost_interest' },
+        { label: 'Saving it for someone, or an occasion', value: 'saving_for_occasion' }
+      ],
+      onPick(value) { answers.not_yet_blocker = value; goTo('d2'); }
+    });
+  },
+
+  d2(container) {
+    renderChoiceScreen(container, {
+      question: 'Where is it right now?',
+      options: [
+        { label: 'Still in the box', value: 'still_in_box' },
+        { label: 'Opened, started a bit', value: 'opened_started' },
+        { label: 'Honestly, not sure', value: 'not_sure' }
+      ],
+      onPick(value) { answers.kit_location = value; goTo('d3'); }
+    });
+  },
+
+  d3(container) {
     renderTextScreen(container, {
-      question: 'Anything else you’d want to tell us?',
-      help: 'Totally optional — skip if nothing comes to mind.',
-      key: 'anything_else',
+      question: 'What would get you to open it this weekend?',
+      key: 'not_yet_open_note',
       optional: true,
-      placeholder: 'Anything at all…',
+      placeholder: 'Anything at all',
       nextId: 'bridge'
     });
   },
@@ -666,80 +913,145 @@ const SCREENS = {
     container.appendChild(mark);
 
     const h = document.createElement('h2');
-    h.textContent = 'Thank you so much — that genuinely helps.';
+    h.textContent = 'Thank you, that really helps.';
     container.appendChild(h);
 
     const p = document.createElement('p');
     p.className = 'lede';
-    p.textContent = "We'd love 2 more minutes from you. We're building something new at hoblie, and we want a few hundred makers like you to help us shape it — think of yourself as an insider to great DIY, made in India, for the world.";
+    p.textContent = "We're building something new at hoblie, and we want a few hundred makers like you to shape it. Think of yourself as an insider to great DIY, made in India, for the world.";
     container.appendChild(p);
 
     const btn = document.createElement('button');
     btn.className = 'btn btn-primary';
     btn.textContent = "I'm in";
     btn.style.marginTop = '22px';
-    btn.addEventListener('click', () => { pressBounce(btn); setTimeout(() => goTo('q_first_time'), 160); });
+    btn.addEventListener('click', () => { pressBounce(btn); setTimeout(() => goTo('q_point_of_entry'), 160); });
     container.appendChild(btn);
   },
 
-  q_first_time(container) {
-    renderTextScreen(container, {
-      eyebrow: 'Take your time',
-      question: 'Think back — when was the first time in your life you did something like this (making, crafting, building with your hands)? What was going on for you around that time?',
-      key: 'first_time_story',
-      placeholder: 'Whatever comes to mind first…',
+  q_point_of_entry(container) {
+    renderSelectScreen(container, {
+      question: 'When you first got into making things as an adult, what was going on?',
+      options: [
+        { value: 'moved_or_new', label: "I'd just moved, or started something new" },
+        { value: 'work_burnout', label: 'Work was burning me out' },
+        { value: 'weekends_empty', label: 'Weekends felt empty' },
+        { value: 'life_slowed_down', label: 'Life slowed down and I had time' },
+        { value: 'someone_curious', label: 'Someone around me started, I got curious' },
+        { value: 'own_money', label: 'I finally had my own money to spend on it' },
+        { value: 'something_else', label: 'Something else' }
+      ],
+      shuffleKey: 'point_of_entry',
+      pinnedLast: ['something_else'],
+      variant: 'chip',
+      required: true,
+      valueKey: 'point_of_entry',
+      orderKey: 'point_of_entry_order',
+      followUp: { key: 'point_of_entry_detail', label: 'Tell me a bit more? (optional)', type: 'input', revealOnSelect: true },
       nextId: 'q_process_output'
     });
   },
 
   q_process_output(container) {
-    renderTextScreen(container, {
-      question: 'After you finish making something, what do you usually find yourself telling people — what you made, or something you figured out while doing it?',
-      key: 'process_or_output',
-      placeholder: 'Either, neither, both…',
-      nextId: 'q_surrender'
+    renderSelectScreen(container, {
+      question: 'After you finish something, what do you end up telling people about?',
+      options: [
+        { value: 'what_i_made', label: 'What I made' },
+        { value: 'figured_out', label: 'Something I figured out' },
+        { value: 'dont_tell_anyone', label: "I don't really tell anyone" }
+      ],
+      variant: 'pill',
+      required: true,
+      valueKey: 'process_or_output',
+      followUp: { key: 'process_or_output_detail', label: 'Why that? (optional)', type: 'input', revealOnSelect: true },
+      nextId: 'q_what_else_make'
     });
   },
 
-  q_surrender(container) {
+  q_what_else_make(container) {
+    renderSelectScreen(container, {
+      question: 'Made or bought any of these? Pick as many as apply.',
+      options: [
+        { value: 'lego', label: 'LEGO or building blocks' },
+        { value: 'puzzles', label: 'Jigsaw puzzles' },
+        { value: 'paint_by_numbers', label: 'Paint by numbers' },
+        { value: 'fiber_crafts', label: 'Crochet, knitting or embroidery' },
+        { value: 'clay_pottery', label: 'Clay or pottery' },
+        { value: 'model_kits', label: 'Model kits - wood, metal or plastic' },
+        { value: 'resin_candle', label: 'Resin or candle making' },
+        { value: 'journaling', label: 'Journaling or scrapbooking' },
+        { value: 'none_of_these', label: 'None of these, this was my first' }
+      ],
+      shuffleKey: 'what_else_make',
+      pinnedLast: ['none_of_these'],
+      variant: 'chip',
+      multi: true,
+      valueKey: 'what_else_make',
+      orderKey: 'what_else_make_order',
+      nextId: (a) => (a.branch === 'not_yet' ? 'q_wall_1' : 'q_stuck_moment')
+    });
+  },
+
+  q_stuck_moment(container) {
     renderTextScreen(container, {
-      question: 'Was there a moment while making it where you got a bit stuck, and then it just clicked? What was that like?',
+      question: 'Did you get stuck at any point, and then it clicked?',
       key: 'surrender_moment',
-      placeholder: 'Describe that moment…',
-      nextId: 'q_feeling'
+      optional: true,
+      placeholder: 'What was that like?',
+      nextId: 'q_how_it_felt'
     });
   },
 
-  q_feeling(container) {
-    renderTextScreen(container, {
-      question: 'How did making it feel, in your own words?',
-      key: 'feeling',
-      placeholder: 'No wrong answers here…',
-      nextId: 'q_wall_reaction'
+  q_how_it_felt(container) {
+    renderSelectScreen(container, {
+      question: 'How did making it feel? Pick as many as you like.',
+      options: [
+        { value: 'calm', label: 'calm' },
+        { value: 'absorbed', label: 'absorbed' },
+        { value: 'proud', label: 'proud' },
+        { value: 'curious', label: 'curious' },
+        { value: 'frustrated', label: 'frustrated' },
+        { value: 'nostalgic', label: 'nostalgic' },
+        { value: 'silly', label: 'silly' },
+        { value: 'focused', label: 'focused' },
+        { value: 'surprised', label: 'surprised' },
+        { value: 'relaxed', label: 'relaxed' }
+      ],
+      shuffleKey: 'how_it_felt',
+      variant: 'chip',
+      multi: true,
+      valueKey: 'how_it_felt',
+      orderKey: 'how_it_felt_order',
+      followUp: { key: 'feeling_detail', label: 'In your own words? (optional)', type: 'textarea', revealOnSelect: false },
+      nextId: 'q_wall_1'
     });
   },
 
-  q_wall_reaction(container) {
+  q_wall_1(container) {
     renderChoiceScreen(container, {
       eyebrow: 'A little idea',
-      question: 'Imagine having your own little museum — a wall of fame — made entirely of things you built yourself. Would you want something like that?',
+      question: 'Imagine a wall of things you built yourself. Would you want that?',
       options: [
         { emoji: '😮', label: 'Definitely', value: 'definitely' },
         { emoji: '🤔', label: 'Maybe', value: 'maybe' },
         { emoji: '🙅', label: 'Not really', value: 'not_really' }
       ],
-      onPick(value) {
-        answers.wall_reaction = value;
-        goTo('q_wall_display');
-      }
+      onPick(value) { answers.wall_reaction = value; goTo('q_wall_2'); }
     });
   },
 
-  q_wall_display(container) {
-    renderTextScreen(container, {
-      question: "Each piece of the wall showcases any DIY activity you've done, or things from your interests, lifestyle, dreams and desires, and more. Tell us what things you'd like your DIY wall to display.",
-      key: 'wall_display',
-      placeholder: 'Things you’d want on your wall…',
+  q_wall_2(container) {
+    renderSelectScreen(container, {
+      question: 'Would you rather the wall showed:',
+      options: [
+        { value: 'things_i_made', label: 'The things I made' },
+        { value: 'what_i_achieved', label: 'What I achieved - hardest build, a new skill, a first attempt' },
+        { value: 'neither', label: 'Neither, really' }
+      ],
+      variant: 'pill',
+      required: true,
+      valueKey: 'wall_shows',
+      followUp: { key: 'wall_no_reason', label: 'What would make you say no to this?', placeholder: 'Be honest, this is the useful bit', type: 'textarea', revealOnSelect: false },
       nextId: 'q_call'
     });
   },
@@ -750,7 +1062,7 @@ const SCREENS = {
     container.appendChild(eyebrow);
 
     const h = document.createElement('h1');
-    h.textContent = 'Would you be up for a quick 15-min call sometime so we can chat more?';
+    h.textContent = 'Up for a quick 15-min call sometime?';
     container.appendChild(h);
     const help = document.createElement('p');
     help.className = 'help'; help.textContent = 'Totally optional.';
@@ -798,7 +1110,18 @@ const SCREENS = {
       answers.call_interest = picked === 'yes';
       answers.call_best_time = picked === 'yes' ? timeInput.value.trim() : '';
       pressBounce(btn);
-      setTimeout(() => goTo('contact'), 160);
+      setTimeout(() => goTo('q_anything_else'), 160);
+    });
+  },
+
+  q_anything_else(container) {
+    renderTextScreen(container, {
+      question: 'Anything else you want to tell us?',
+      help: 'Totally optional, skip if nothing comes to mind.',
+      key: 'anything_else',
+      optional: true,
+      placeholder: 'Anything at all…',
+      nextId: 'contact'
     });
   },
 
@@ -812,15 +1135,48 @@ const SCREENS = {
     container.appendChild(h);
     const p = document.createElement('p');
     p.className = 'lede';
-    p.textContent = 'We want to say thanks properly — where should we send something small your way?';
-    p.style.marginBottom = '20px';
+    p.textContent = 'We want to say thanks properly. Where should we send something small your way?';
+    p.style.marginBottom = '18px';
     container.appendChild(p);
 
+    // demographics, above the contact fields since they're lower-friction
+    const ageWrap = document.createElement('div');
+    ageWrap.className = 'field';
+    ageWrap.innerHTML = `<label class="field-label">Age</label>`;
+    const ageRow = document.createElement('div');
+    ageRow.className = 'chip-row';
+    const ageOptions = [
+      { value: 'under_24', label: 'Under 24' },
+      { value: '25_30', label: '25-30' },
+      { value: '31_35', label: '31-35' },
+      { value: '36_42', label: '36-42' },
+      { value: '43_50', label: '43-50' },
+      { value: '50_plus', label: '50+' },
+      { value: 'prefer_not_to_say', label: 'Prefer not to say' }
+    ];
+    let ageSelected = answers.age_band || null;
+    ageOptions.forEach(opt => {
+      const chip = document.createElement('button');
+      chip.className = 'chip';
+      chip.textContent = opt.label;
+      if (ageSelected === opt.value) chip.classList.add('selected');
+      chip.addEventListener('click', () => {
+        ageRow.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+        chip.classList.add('selected');
+        ageSelected = opt.value;
+      });
+      ageRow.appendChild(chip);
+    });
+    ageWrap.appendChild(ageRow);
+    container.appendChild(ageWrap);
+
     const fields = [
-      { key: 'name', label: 'Name', placeholder: 'Your name', required: true },
-      { key: 'phone', label: 'Phone number', placeholder: 'For WhatsApp / delivery', required: true, type: 'tel' },
-      { key: 'email', label: 'Email (optional)', placeholder: 'you@example.com', required: false, type: 'email' },
-      { key: 'address', label: 'Address (optional)', placeholder: 'So we can send the gift over', required: false }
+      { key: 'city', label: 'City', placeholder: 'Where are you based?' },
+      { key: 'occupation', label: 'What do you do?', placeholder: 'Work, studies, whatever fits' },
+      { key: 'name', label: 'Name', placeholder: 'Your name' },
+      { key: 'phone', label: 'Phone number', placeholder: 'For WhatsApp / delivery', type: 'tel' },
+      { key: 'email', label: 'Email (optional)', placeholder: 'you@example.com', type: 'email' },
+      { key: 'address', label: 'Address (optional)', placeholder: 'So we can send the gift over' }
     ];
     const inputs = {};
     fields.forEach(f => {
@@ -842,12 +1198,12 @@ const SCREENS = {
     const closing = document.createElement('p');
     closing.className = 'help';
     closing.style.marginTop = '4px';
-    closing.textContent = "We'll also be inviting you into our inside community and future product-experience crews soon — keep an eye on WhatsApp.";
+    closing.textContent = "We'll also be inviting you into our inside community and future product crews soon. Keep an eye on WhatsApp.";
     container.appendChild(closing);
 
     const errorMsg = document.createElement('p');
     errorMsg.className = 'error-msg';
-    errorMsg.textContent = "Hmm, that didn't save — mind trying again?";
+    errorMsg.textContent = "Hmm, that didn't save. Mind trying again?";
     container.appendChild(errorMsg);
 
     const actions = document.createElement('div');
@@ -855,18 +1211,13 @@ const SCREENS = {
     const btn = document.createElement('button');
     btn.className = 'btn btn-primary';
     btn.innerHTML = `<span class="spinner"></span><span class="btn-label">Done</span>`;
-    btn.disabled = true;
     actions.appendChild(btn);
     container.appendChild(actions);
 
-    function checkValid() {
-      btn.disabled = !inputs.name.value.trim() || !inputs.phone.value.trim();
-    }
-    inputs.name.addEventListener('input', checkValid);
-    inputs.phone.addEventListener('input', checkValid);
-
     btn.addEventListener('click', async () => {
+      answers.age_band = ageSelected;
       fields.forEach(f => { answers[f.key] = inputs[f.key].value.trim(); });
+      answers.completion_seconds = Math.round((Date.now() - startedAt) / 1000);
       pressBounce(btn);
       btn.disabled = true;
       btn.querySelector('.spinner').classList.add('show');
@@ -891,7 +1242,7 @@ const SCREENS = {
     e.className = 'final-emoji'; e.textContent = '🎉';
     container.appendChild(e);
     const h = document.createElement('h1');
-    h.textContent = "You're all set — thank you!";
+    h.textContent = "You're all set, thank you!";
     container.appendChild(h);
     const p = document.createElement('p');
     p.className = 'lede';
@@ -905,23 +1256,41 @@ const SCREENS = {
 async function submitResponse() {
   await supabaseReady;
   const payload = {
+    branch: answers.branch || null,
     made_kit: answers.made_kit || null,
-    not_yet_reason: answers.not_yet_reason || null,
     experience: answers.experience || null,
     liked_most: answers.liked_most || null,
-    anything_else: answers.anything_else || null,
-    first_time_story: answers.first_time_story || null,
+    where_now: answers.where_now || null,
+    time_taken: answers.time_taken || null,
+    alone_or_with: answers.alone_or_with || null,
+    not_yet_blocker: answers.not_yet_blocker || null,
+    kit_location: answers.kit_location || null,
+    not_yet_open_note: answers.not_yet_open_note || null,
+    point_of_entry: answers.point_of_entry || null,
+    point_of_entry_detail: answers.point_of_entry_detail || null,
+    point_of_entry_order: answers.point_of_entry_order || null,
     process_or_output: answers.process_or_output || null,
+    process_or_output_detail: answers.process_or_output_detail || null,
+    what_else_make: answers.what_else_make || null,
+    what_else_make_order: answers.what_else_make_order || null,
     surrender_moment: answers.surrender_moment || null,
-    feeling: answers.feeling || null,
+    how_it_felt: answers.how_it_felt || null,
+    how_it_felt_order: answers.how_it_felt_order || null,
+    feeling_detail: answers.feeling_detail || null,
     wall_reaction: answers.wall_reaction || null,
-    wall_display: answers.wall_display || null,
+    wall_shows: answers.wall_shows || null,
+    wall_no_reason: answers.wall_no_reason || null,
     call_interest: typeof answers.call_interest === 'boolean' ? answers.call_interest : null,
     call_best_time: answers.call_best_time || null,
+    anything_else: answers.anything_else || null,
+    age_band: answers.age_band || null,
+    city: answers.city || null,
+    occupation: answers.occupation || null,
     name: answers.name || null,
     phone: answers.phone || null,
     email: answers.email || null,
-    address: answers.address || null
+    address: answers.address || null,
+    completion_seconds: typeof answers.completion_seconds === 'number' ? answers.completion_seconds : null
   };
 
   if (!isConfigured || !supabase) {
@@ -941,8 +1310,26 @@ async function submitResponse() {
   return true;
 }
 
-// kick off
-goTo('intro');
+// ---- kick off, resuming a saved session if one exists ------------------
+(function bootstrap() {
+  const saved = loadState();
+  const resumable = saved && saved.currentId && saved.currentId !== 'intro' && saved.currentId !== 'thankyou'
+    && Array.isArray(saved.historyStack) && saved.historyStack.length && SCREENS[saved.currentId];
+
+  if (resumable) {
+    Object.assign(answers, saved.answers || {});
+    historyStack.push(...saved.historyStack);
+    Object.assign(shuffleCache, saved.shuffleCache || {});
+    branchName = saved.branchName || null;
+    currentPath = branchName === 'not_yet' ? NOT_YET_PATH : MADE_PATH;
+    startedAt = saved.startedAt || Date.now();
+    render(saved.currentId, { direction: 'forward' });
+    return;
+  }
+
+  startedAt = Date.now();
+  goTo('intro');
+})();
 </script>
 </body>
 </html>

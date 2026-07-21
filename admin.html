@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>hoblie — responses</title>
+<title>hoblie - responses</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -113,7 +113,7 @@
       <input type="password" id="loginPassword" autocomplete="current-password">
     </div>
     <button class="btn" id="loginBtn">Sign in</button>
-    <p class="err" id="loginErr">Couldn't sign in — check your email and password.</p>
+    <p class="err" id="loginErr">Couldn't sign in. Check your email and password.</p>
   </div>
 </div>
 
@@ -133,7 +133,7 @@
 </div>
 
 <script type="module">
-// Replace with your project's values (same as index.html) — Settings -> API.
+// Replace with your project's values (same as index.html). Settings -> API.
 const SUPABASE_URL = "https://rjasrucloiozbvvmouuu.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_nToADn1Ma-2ILahQkOf64w_QTSKiRG8";
 
@@ -171,26 +171,40 @@ function fmtDate(iso) {
 
 const QA_FIELDS = [
   ['made_kit', 'Made the kit?'],
-  ['not_yet_reason', "What's held them back"],
+  ['not_yet_blocker', "What's held them back"],
+  ['kit_location', 'Where the kit is'],
+  ['not_yet_open_note', 'What would get them to open it'],
   ['experience', 'Experience'],
   ['liked_most', 'Liked most'],
-  ['anything_else', 'Anything else'],
-  ['first_time_story', 'First time making something'],
+  ['where_now', 'Where it is now'],
+  ['time_taken', 'How long it took'],
+  ['alone_or_with', 'Alone or with someone'],
+  ['point_of_entry', 'Point of entry'],
+  ['point_of_entry_detail', 'Point of entry, more'],
   ['process_or_output', 'Process or output'],
+  ['process_or_output_detail', 'Process or output, why'],
+  ['what_else_make', 'Other things they make'],
   ['surrender_moment', 'The "it clicked" moment'],
-  ['feeling', 'How it felt'],
+  ['how_it_felt', 'How it felt'],
+  ['feeling_detail', 'How it felt, in their words'],
   ['wall_reaction', 'Wall of fame reaction'],
-  ['wall_display', 'What they\'d put on the wall'],
+  ['wall_shows', 'What the wall should show'],
+  ['wall_no_reason', 'What would make them say no'],
   ['call_interest', 'Up for a call?'],
   ['call_best_time', 'Best time to call'],
+  ['anything_else', 'Anything else'],
+  ['age_band', 'Age'],
+  ['city', 'City'],
+  ['occupation', 'Occupation'],
   ['email', 'Email'],
-  ['address', 'Address']
+  ['address', 'Address'],
+  ['completion_seconds', 'Time to complete (s)']
 ];
 
 function renderRows(rows) {
   countPill.textContent = rows.length;
   if (!rows.length) {
-    listWrap.innerHTML = '<div class="empty-state">No responses yet — share the link and check back soon.</div>';
+    listWrap.innerHTML = '<div class="empty-state">No responses yet. Share the link and check back soon.</div>';
     return;
   }
   listWrap.innerHTML = '';
@@ -219,7 +233,8 @@ function renderRows(rows) {
         ${QA_FIELDS.map(([key, label]) => {
           let val = r[key];
           if (key === 'call_interest') val = val === true ? 'Yes' : (val === false ? 'No' : null);
-          return `<div class="qa"><div class="q">${esc(label)}</div><div class="a ${!val ? 'empty' : ''}">${val ? esc(val) : '—'}</div></div>`;
+          if (Array.isArray(val)) val = val.length ? val.join(', ') : null;
+          return `<div class="qa"><div class="q">${esc(label)}</div><div class="a ${!val ? 'empty' : ''}">${val ? esc(String(val)) : '-'}</div></div>`;
         }).join('')}
       </div>
     `;
@@ -261,8 +276,8 @@ loginBtn.addEventListener('click', async () => {
   await supabaseReady;
   if (!isConfigured || !supabase) {
     loginErr.textContent = isConfigured
-      ? "Couldn't reach Supabase — check your connection and try again."
-      : 'Supabase is not configured yet — see README.md.';
+      ? "Couldn't reach Supabase. Check your connection and try again."
+      : 'Supabase is not configured yet. See README.md.';
     loginErr.classList.add('show');
     loginBtn.disabled = false;
     loginBtn.textContent = 'Sign in';
@@ -273,7 +288,7 @@ loginBtn.addEventListener('click', async () => {
   loginBtn.disabled = false;
   loginBtn.textContent = 'Sign in';
   if (error) {
-    loginErr.textContent = "Couldn't sign in — check your email and password.";
+    loginErr.textContent = "Couldn't sign in. Check your email and password.";
     loginErr.classList.add('show');
     return;
   }
