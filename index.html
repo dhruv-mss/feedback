@@ -1314,12 +1314,19 @@ function buildPayload(completed) {
 // sessionId) every time the respondent moves to a new screen, so
 // someone who closes the tab halfway still leaves real data behind.
 // Never blocks navigation and never surfaces errors to the user.
+//
+// This goes through the save_response() Postgres function rather than a
+// direct table upsert. Postgres RLS needs SELECT-level visibility to
+// resolve an upsert's ON CONFLICT check, and a public SELECT policy for
+// anon would let anyone holding the public key read every respondent's
+// answers. Routing writes through a SECURITY DEFINER function avoids that:
+// anon can save a response but has no direct table access at all.
 async function syncProgress() {
   if (!isConfigured) return;
   try {
     await supabaseReady;
     if (!supabase) return;
-    const { error } = await supabase.from('responses').upsert([buildPayload(false)], { onConflict: 'id' });
+    const { error } = await supabase.rpc('save_response', { payload: buildPayload(false) });
     if (error) console.error('hoblie form: partial save failed, will retry on next screen.', error);
   } catch (e) {
     console.error('hoblie form: partial save failed, will retry on next screen.', e);
@@ -1339,9 +1346,9 @@ async function submitResponse() {
     return true;
   }
 
-  const { error } = await supabase.from('responses').upsert([payload], { onConflict: 'id' });
+  const { error } = await supabase.rpc('save_response', { payload });
   if (error) {
-    console.error('Supabase upsert failed:', error);
+    console.error('Supabase save_response failed:', error);
     return false;
   }
   return true;
