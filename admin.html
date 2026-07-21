@@ -6,51 +6,54 @@
 <title>hoblie — responses</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --cream:#FAF3E7;
-    --cream-deep:#F1E1CB;
-    --card:#FFFCF7;
-    --ink:#2B2420;
-    --ink-muted:#8a7a68;
-    --terracotta:#C1592D;
-    --terracotta-dark:#A6461F;
-    --terracotta-soft:#F1DAC7;
+    --bg:#FFF9F0;
+    --bg-deep:#F3E9DB;
+    --card:#FFFFFF;
+    --ink:#1B1815;
+    --ink-muted:#847A6E;
+    --pink:#EF4B8E;
+    --pink-dark:#CE3172;
+    --pink-soft:#FCE1EC;
+    --teal:#1FBFB8;
+    --teal-dark:#158E89;
+    --teal-soft:#DEF6F4;
   }
   *{box-sizing:border-box;}
   body{
     margin:0; min-height:100vh;
-    background:var(--cream);
+    background:var(--bg);
     color:var(--ink);
     font-family:'Inter',sans-serif;
   }
-  h1,h2{ font-family:'Fraunces',serif; font-style:italic; font-weight:500; margin:0; }
+  h1,h2{ font-family:'Baloo 2',sans-serif; font-weight:700; margin:0; }
 
   .login-wrap{
     min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
   }
   .login-card{
     background:var(--card); border-radius:24px; padding:36px 30px; width:100%; max-width:380px;
-    box-shadow: 0 20px 50px -25px rgba(43,36,32,.3);
+    box-shadow: 0 20px 50px -25px rgba(27,24,21,.18);
   }
-  .brandmark{ font-family:'Fraunces',serif; font-style:italic; font-weight:600; color:var(--terracotta); margin-bottom:6px; }
+  .brandmark{ font-family:'Baloo 2',sans-serif; font-weight:800; font-size:19px; color:var(--pink); margin-bottom:6px; }
   .login-card h1{ font-size:24px; margin-bottom:20px; }
   .field{ margin-bottom:14px; }
   label{ display:block; font-size:13px; font-weight:600; color:var(--ink-muted); margin-bottom:6px; }
   input{
-    width:100%; border:2px solid var(--cream-deep); background:#fff; border-radius:14px;
+    width:100%; border:2px solid var(--bg-deep); background:#fff; border-radius:14px;
     padding:12px 16px; font-size:15px; font-family:'Inter',sans-serif; outline:none; color:var(--ink);
   }
-  input:focus{ border-color:var(--terracotta); }
+  input:focus{ border-color:var(--pink); }
   .btn{
     appearance:none; border:none; cursor:pointer; font-weight:600; font-size:15px;
-    border-radius:999px; padding:13px 22px; width:100%; background:var(--terracotta); color:#fff8f2;
+    border-radius:999px; padding:13px 22px; width:100%; background:var(--pink); color:#fff;
     margin-top:6px; transition: transform .12s ease;
   }
   .btn:active{ transform:scale(.97); }
   .btn:disabled{ opacity:.5; cursor:not-allowed; }
-  .err{ color:var(--terracotta-dark); font-size:13.5px; margin-top:10px; display:none; }
+  .err{ color:var(--pink-dark); font-size:13.5px; margin-top:10px; display:none; }
   .err.show{ display:block; }
 
   .dash{ display:none; max-width:900px; margin:0 auto; padding:26px 20px 60px; }
@@ -61,12 +64,12 @@
   .dash-top h1{ font-size:26px; }
   .top-actions{ display:flex; gap:10px; }
   .btn-sm{
-    appearance:none; border:2px solid var(--cream-deep); background:var(--card); color:var(--ink);
+    appearance:none; border:2px solid var(--bg-deep); background:var(--card); color:var(--ink);
     font-weight:600; font-size:13.5px; border-radius:999px; padding:9px 16px; cursor:pointer;
   }
-  .btn-sm:hover{ border-color:var(--terracotta); }
+  .btn-sm:hover{ border-color:var(--teal); }
   .count-pill{
-    background:var(--terracotta-soft); color:var(--terracotta-dark); font-weight:700; font-size:13px;
+    background:var(--pink-soft); color:var(--pink-dark); font-weight:700; font-size:13px;
     padding:6px 14px; border-radius:999px;
   }
 
@@ -79,8 +82,8 @@
   .rcard-name{ font-weight:700; font-size:16px; }
   .rcard-date{ font-size:12.5px; color:var(--ink-muted); white-space:nowrap; }
   .rcard-tags{ display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
-  .tag{ background:var(--cream-deep); color:var(--ink); font-size:11.5px; font-weight:600; padding:4px 10px; border-radius:999px; }
-  .tag.love{ background:var(--terracotta-soft); color:var(--terracotta-dark); }
+  .tag{ background:var(--teal-soft); color:var(--teal-dark); font-size:11.5px; font-weight:600; padding:4px 10px; border-radius:999px; }
+  .tag.love{ background:var(--pink-soft); color:var(--pink-dark); }
 
   .rcard-body{
     max-height:0; overflow:hidden; transition:max-height .3s ease, margin .3s ease;
