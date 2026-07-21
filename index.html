@@ -435,12 +435,12 @@ let sessionId = null;
 const MADE_PATH = [
   'q_made', 'q_experience', 'q_liked_most', 'q_where_now', 'q_time_taken', 'q_alone_or_with',
   'bridge', 'q_point_of_entry', 'q_process_output', 'q_what_else_make', 'q_stuck_moment',
-  'q_how_it_felt', 'q_wall_1', 'q_wall_2', 'q_call', 'q_anything_else', 'contact'
+  'q_how_it_felt', 'q_wall_1', 'q_wall_2', 'q_traits', 'q_call', 'q_anything_else', 'contact'
 ];
 const NOT_YET_PATH = [
   'q_made', 'd1', 'd2', 'd3',
   'bridge', 'q_point_of_entry', 'q_process_output', 'q_what_else_make',
-  'q_wall_1', 'q_wall_2', 'q_call', 'q_anything_else', 'contact'
+  'q_wall_1', 'q_wall_2', 'q_traits', 'q_call', 'q_anything_else', 'contact'
 ];
 let currentPath = MADE_PATH;
 
@@ -1065,6 +1065,28 @@ const SCREENS = {
       required: true,
       valueKey: 'wall_shows',
       followUp: { key: 'wall_no_reason', label: 'What would make you say no to this?', placeholder: 'Be honest, this is the useful bit', type: 'textarea', revealOnSelect: false },
+      nextId: 'q_traits'
+    });
+  },
+
+  q_traits(container) {
+    renderSelectScreen(container, {
+      question: 'A few things makers have told us about themselves. Any of these sound like you? (Pick as many as apply.)',
+      options: [
+        { value: 'starts_more_than_finishes', label: 'I start more things than I finish' },
+        { value: 'loses_track_of_time', label: "Once I'm into something, I lose track of time completely" },
+        { value: 'hard_to_sit_still', label: 'I find it hard to sit still without something in my hands' },
+        { value: 'bored_after_figuring_out', label: "I get bored once I've figured something out" },
+        { value: 'needs_background_noise', label: 'I need a show or music on in the background to focus' },
+        { value: 'deep_dive_then_move_on', label: "I'll go deep on something new for a few weeks, then move on" },
+        { value: 'none_of_these', label: 'None of these really' }
+      ],
+      shuffleKey: 'traits',
+      pinnedLast: ['none_of_these'],
+      variant: 'chip',
+      multi: true,
+      valueKey: 'self_traits',
+      orderKey: 'self_traits_order',
       nextId: 'q_call'
     });
   },
@@ -1296,6 +1318,8 @@ function buildPayload(completed) {
     wall_reaction: answers.wall_reaction || null,
     wall_shows: answers.wall_shows || null,
     wall_no_reason: answers.wall_no_reason || null,
+    self_traits: answers.self_traits || null,
+    self_traits_order: answers.self_traits_order || null,
     call_interest: typeof answers.call_interest === 'boolean' ? answers.call_interest : null,
     call_best_time: answers.call_best_time || null,
     anything_else: answers.anything_else || null,

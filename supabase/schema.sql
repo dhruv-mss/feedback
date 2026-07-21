@@ -66,6 +66,9 @@ alter table public.responses add column if not exists occupation text;
 
 alter table public.responses add column if not exists completion_seconds integer;
 
+alter table public.responses add column if not exists self_traits jsonb;
+alter table public.responses add column if not exists self_traits_order jsonb;
+
 -- save-as-you-go (partial responses reach the database): the form writes
 -- a row the moment someone answers their first question, and keeps
 -- saving into the same row (matched by a client-generated id) as they
@@ -120,6 +123,7 @@ begin
     surrender_moment,
     how_it_felt, how_it_felt_order, feeling_detail,
     wall_reaction, wall_shows, wall_no_reason,
+    self_traits, self_traits_order,
     call_interest, call_best_time,
     anything_else,
     age_band, city, occupation,
@@ -140,6 +144,7 @@ begin
     payload->>'surrender_moment',
     payload->'how_it_felt', payload->'how_it_felt_order', payload->>'feeling_detail',
     payload->>'wall_reaction', payload->>'wall_shows', payload->>'wall_no_reason',
+    payload->'self_traits', payload->'self_traits_order',
     (payload->>'call_interest')::boolean, payload->>'call_best_time',
     payload->>'anything_else',
     payload->>'age_band', payload->>'city', payload->>'occupation',
@@ -174,6 +179,8 @@ begin
     wall_reaction           = excluded.wall_reaction,
     wall_shows              = excluded.wall_shows,
     wall_no_reason          = excluded.wall_no_reason,
+    self_traits             = excluded.self_traits,
+    self_traits_order       = excluded.self_traits_order,
     call_interest           = excluded.call_interest,
     call_best_time          = excluded.call_best_time,
     anything_else           = excluded.anything_else,
