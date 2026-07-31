@@ -91,6 +91,20 @@ button {
   margin-top: 4px;
 }
 
+.app-tagline {
+  margin: 2px 0 0 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--saffron);
+  font-style: italic;
+}
+
+.app-tagline .gu {
+  display: block;
+  font-style: normal;
+  margin-top: 4px;
+}
+
 .screen-title {
   font-size: 26px;
   color: var(--maroon-deep);
