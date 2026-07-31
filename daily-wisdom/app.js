@@ -8,6 +8,7 @@
   var STORAGE = {
     lang: "dw_lang",
     onboarded: "dw_onboarded",
+    installAsked: "dw_install_asked",
     daily: "dw_daily_state",
     streak: "dw_streak",
     history: "dw_history"
@@ -46,7 +47,12 @@
       readAllTitle: "All 100 Principles",
       back: "← Back",
       footerCredit: "Pujya Shri Rajyogi Narendraji",
-      number: function (n) { return "Principle " + n + " of 100"; }
+      number: function (n) { return "Principle " + n + " of 100"; },
+      installTitle: "Add to Your Home Screen",
+      installBody: "Install Daily Wisdom on your device so it opens like an app, right from your home screen — no browser bar, no searching for a link.",
+      installBodyIOS: "On iPhone or iPad: tap the Share icon, then choose \"Add to Home Screen.\"",
+      installBtn: "Add to Home Screen",
+      installNotNow: "Not now"
     },
     gu: {
       appName: "રોજનું જ્ઞાન",
@@ -76,7 +82,12 @@
       readAllTitle: "બધા ૧૦૦ સિદ્ધાંતો",
       back: "← પાછા",
       footerCredit: "પૂજ્ય શ્રી રાજયોગી નરેન્દ્રજી",
-      number: function (n) { return "સિદ્ધાંત " + n + " / 100"; }
+      number: function (n) { return "સિદ્ધાંત " + n + " / 100"; },
+      installTitle: "તમારી હોમ સ્ક્રીન પર ઉમેરો",
+      installBody: "Daily Wisdom ને તમારા ડિવાઇસ પર ઇન્સ્ટોલ કરો, જેથી તે એપની જેમ સીધું તમારી હોમ સ્ક્રીન પરથી ખૂલે — બ્રાઉઝર બાર કે લિંક શોધવાની જરૂર નહીં.",
+      installBodyIOS: "આઇફોન અથવા આઇપેડ પર: Share (શેર) આઇકન દબાવો, પછી \"Add to Home Screen\" પસંદ કરો.",
+      installBtn: "હોમ સ્ક્રીન પર ઉમેરો",
+      installNotNow: "અત્યારે નહીં"
     }
   };
 
@@ -227,8 +238,9 @@
 
   function cacheEls() {
     [
-      "screen-language", "screen-onboarding", "screen-home", "screen-readall",
+      "screen-language", "screen-onboarding", "screen-install", "screen-home", "screen-readall",
       "ob-title", "ob-body", "ob-continue",
+      "install-title", "install-body", "install-ios-note", "install-btn", "install-not-now",
       "home-app-name", "lang-toggle", "home-date",
       "principle-number", "principle-text", "ai-note",
       "checkin-question", "checkin-options", "checkin-thanks",
@@ -239,13 +251,53 @@
   }
 
   function showScreen(name) {
-    ["screen-language", "screen-onboarding", "screen-home", "screen-readall"].forEach(function (id) {
+    ["screen-language", "screen-onboarding", "screen-install", "screen-home", "screen-readall"].forEach(function (id) {
       els[id].hidden = (id !== name);
     });
     window.scrollTo(0, 0);
   }
 
   function t() { return TEXT[lang]; }
+
+  // ---------------- install prompt (Add to Home Screen) ----------------
+  var deferredInstallPrompt = null;
+
+  window.addEventListener("beforeinstallprompt", function (event) {
+    event.preventDefault();
+    deferredInstallPrompt = event;
+  });
+
+  function isStandaloneDisplay() {
+    return (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+      window.navigator.standalone === true;
+  }
+
+  function isIOSDevice() {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  }
+
+  function shouldShowInstallScreen() {
+    return !loadJSON(STORAGE.installAsked, false) && !isStandaloneDisplay();
+  }
+
+  function renderInstall() {
+    els["install-title"].textContent = t().installTitle;
+    els["install-title"].className = "screen-title" + (lang === "gu" ? " gu" : "");
+    els["install-body"].textContent = t().installBody;
+    els["install-body"].className = "onboarding-body" + (lang === "gu" ? " gu" : "");
+
+    if (isIOSDevice()) {
+      els["install-ios-note"].hidden = false;
+      els["install-ios-note"].textContent = t().installBodyIOS;
+      els["install-ios-note"].className = "muted" + (lang === "gu" ? " gu" : "");
+    } else {
+      els["install-ios-note"].hidden = true;
+    }
+
+    els["install-btn"].textContent = t().installBtn;
+    els["install-not-now"].textContent = t().installNotNow;
+  }
 
   function renderOnboarding() {
     els["ob-title"].textContent = t().obTitle;
@@ -392,8 +444,31 @@
 
     els["ob-continue"].addEventListener("click", function () {
       saveJSON(STORAGE.onboarded, true);
+      proceedPastOnboarding();
+    });
+
+    els["install-btn"].addEventListener("click", function () {
+      saveJSON(STORAGE.installAsked, true);
+      if (deferredInstallPrompt) {
+        var promptEvent = deferredInstallPrompt;
+        deferredInstallPrompt = null;
+        promptEvent.prompt();
+        promptEvent.userChoice.then(function () { enterHome(); });
+      } else {
+        enterHome();
+      }
+    });
+
+    els["install-not-now"].addEventListener("click", function () {
+      saveJSON(STORAGE.installAsked, true);
       enterHome();
     });
+
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("./sw.js").catch(function () { /* offline caching is a nice-to-have */ });
+      });
+    }
 
     var storedLang = loadJSON(STORAGE.lang, null);
     var onboarded = loadJSON(STORAGE.onboarded, false);
@@ -419,6 +494,15 @@
       return;
     }
 
+    proceedPastOnboarding();
+  }
+
+  function proceedPastOnboarding() {
+    if (shouldShowInstallScreen()) {
+      renderInstall();
+      showScreen("screen-install");
+      return;
+    }
     enterHome();
   }
 

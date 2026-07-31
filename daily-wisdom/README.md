@@ -10,24 +10,20 @@ in the browser's `localStorage` on each person's own device.
 
 ## Files
 
-- `index.html` — all screens (language choice, onboarding, today's
-  principle, Read All 100)
+- `index.html` — all screens (language choice, onboarding, install
+  prompt, today's principle, Read All 100)
 - `style.css` — warm/spiritual visual design, large touch-friendly UI
-- `app.js` — daily rotation logic, streak tracking, rendering
+- `app.js` — daily rotation logic, streak tracking, install prompt, rendering
 - `data.js` — the 100 principles (Gujarati + English), bundled locally
+- `manifest.json` — web app manifest so the site can be installed as an app
+- `sw.js` — minimal service worker: caches the app shell for offline use
+- `icons/` — app icons used by the manifest and Add to Home Screen
 - `netlify.toml` — static deploy config, no build step
 
 ## Deploying to Netlify
 
-This folder is a subdirectory of a larger repo, so when you create the
-Netlify site, set:
-
-- **Base directory:** `daily-wisdom`
-- **Build command:** (leave empty)
-- **Publish directory:** `daily-wisdom` (or `.` relative to the base
-  directory above)
-
-No environment variables, functions, or build step are needed.
+Point Netlify at this repo's root — no base/publish directory changes
+needed, no build command, no environment variables, no functions.
 
 ## How the daily principle works
 
@@ -37,6 +33,21 @@ index. Each new local calendar date advances the index by one (looping
 back to a freshly reshuffled order after all 100 have been shown), so
 the same principle is shown all day regardless of refreshes, and no
 principle repeats until the full set has cycled through.
+
+## Install prompt (Add to Home Screen)
+
+The very first time someone opens the app — right after the language
+choice and welcome screen — it gently asks whether they'd like to add
+it to their home screen, so it opens like a regular app. This is asked
+once, ever (tracked in `localStorage`), and skipped entirely if the app
+is already running installed (standalone mode).
+
+- On Android/Chrome/desktop Chrome, tapping "Add to Home Screen" uses
+  the browser's native `beforeinstallprompt` flow when available.
+- On iOS/iPadOS, which has no programmatic install API, the screen
+  instead shows a one-line instruction: tap Share → "Add to Home Screen."
+- Either way, "Not now" moves on to today's principle immediately —
+  nothing is blocked or forced.
 
 ## Notes on the Gujarati font
 

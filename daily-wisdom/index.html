@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 <title>Daily Wisdom &mdash; Rajyogi Narendraji's 100 Principles</title>
 <meta name="description" content="One life principle a day from Pujya Shri Rajyogi Narendraji">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#7A2E33">
+<link rel="icon" href="icons/favicon-48.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Daily Wisdom">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -30,6 +37,20 @@
     <h1 id="ob-title" class="screen-title"></h1>
     <div id="ob-body" class="onboarding-body"></div>
     <button id="ob-continue" class="btn btn-primary btn-wide"></button>
+  </div>
+</section>
+
+<!-- ===================== INSTALL PROMPT (first ever visit, once) ===================== -->
+<section id="screen-install" class="screen" hidden>
+  <div class="center-card">
+    <div class="glyph">ॐ મા ॐ</div>
+    <h1 id="install-title" class="screen-title"></h1>
+    <p id="install-body" class="onboarding-body"></p>
+    <p id="install-ios-note" class="muted" hidden></p>
+    <div class="choice-buttons">
+      <button id="install-btn" class="btn btn-primary btn-wide"></button>
+      <button id="install-not-now" class="btn btn-secondary btn-wide"></button>
+    </div>
   </div>
 </section>
 
