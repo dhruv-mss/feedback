@@ -71,9 +71,11 @@ button {
 }
 
 .glyph {
-  font-size: 30px;
+  font-size: 26px;
+  letter-spacing: 0.04em;
   color: var(--saffron);
   opacity: 0.85;
+  font-family: 'Noto Sans Gujarati', 'Nirmala UI', 'Shruti', sans-serif;
 }
 
 .app-name {
