@@ -439,19 +439,17 @@ function generateId() {
 }
 let sessionId = null;
 
-// Every screen the respondent can actually see, in order. MAIN_PATH is
-// everyone who remembers the product; EXIT_PATH is the short "I don't
-// remember" close, decided at q_product_tried.
-const MAIN_PATH = [
+// Every screen the respondent can actually see, in order. One flow for
+// everyone: "I don't remember" on q_product_tried is just an answer, it
+// no longer short-circuits the rest of the form.
+const PATH = [
   'q_identity', 'q_brand_recall', 'q_product_tried',
   'q_use_case', 'q_buy_channel', 'q_value_pref',
   'q_proxy_hobbies', 'q_keep_or_give', 'q_alone_or_with2', 'q_point_of_entry2',
   'q_why_make', 'q_tell_people', 'q_traits2', 'q_difficulty',
   'q_projective', 'q_demographics', 'q_optin'
 ];
-const EXIT_PATH = ['q_identity', 'q_brand_recall', 'q_product_tried'];
-let currentPath = MAIN_PATH;
-const TERMINAL_SCREENS = new Set(['thankyou', 'thankyou_exit']);
+const TERMINAL_SCREENS = new Set(['thankyou']);
 
 // ---- save / resume progress -------------------------------------------
 const STORAGE_KEY = 'hoblie_community_progress_v1';
@@ -459,8 +457,7 @@ const STORAGE_KEY = 'hoblie_community_progress_v1';
 function saveState() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      answers, historyStack, currentId, shuffleCache, startedAt, sessionId,
-      onExitPath: currentPath === EXIT_PATH
+      answers, historyStack, currentId, shuffleCache, startedAt, sessionId
     }));
   } catch (e) { /* ignore quota/private-mode errors */ }
 }
@@ -496,9 +493,9 @@ function updateProgress(id) {
     return;
   }
   progressBlocksEl.style.visibility = 'visible';
-  const total = currentPath.length;
+  const total = PATH.length;
   ensureBlockCount(total);
-  let idx = TERMINAL_SCREENS.has(id) ? total - 1 : currentPath.indexOf(id);
+  let idx = TERMINAL_SCREENS.has(id) ? total - 1 : PATH.indexOf(id);
   if (idx === -1) idx = 0;
   const blocks = progressBlocksEl.querySelectorAll('.blk');
   blocks.forEach((b, i) => {
@@ -844,14 +841,7 @@ const SCREENS = {
       ],
       onPick(value) {
         answers.product_tried = value;
-        if (value === 'dont_remember') {
-          currentPath = EXIT_PATH;
-          answers.completion_seconds = Math.round((Date.now() - startedAt) / 1000);
-          submitResponse();
-          goTo('thankyou_exit');
-        } else {
-          goTo('q_use_case');
-        }
+        goTo('q_use_case');
       }
     });
   },
@@ -1055,11 +1045,6 @@ const SCREENS = {
     const h = document.createElement('h2');
     h.textContent = 'A bit about you';
     container.appendChild(h);
-    const p = document.createElement('p');
-    p.className = 'lede';
-    p.textContent = 'This stays private, seen only by our small team.';
-    p.style.marginBottom = '18px';
-    container.appendChild(p);
 
     const ageWrap = document.createElement('div');
     ageWrap.className = 'field';
@@ -1072,8 +1057,7 @@ const SCREENS = {
       { value: '31_35', label: '31-35' },
       { value: '36_42', label: '36-42' },
       { value: '43_50', label: '43-50' },
-      { value: '50_plus', label: '50+' },
-      { value: 'prefer_not_to_say', label: 'Prefer not to say' }
+      { value: '50_plus', label: '50+' }
     ];
     let ageSelected = answers.age_band || null;
     ageOptions.forEach(opt => {
@@ -1093,15 +1077,53 @@ const SCREENS = {
 
     const occWrap = document.createElement('div');
     occWrap.className = 'field';
-    const occLabel = document.createElement('label');
-    occLabel.className = 'field-label'; occLabel.textContent = 'What do you do?';
-    occWrap.appendChild(occLabel);
-    const occInput = document.createElement('input');
-    occInput.className = 'answer';
-    occInput.placeholder = 'Work, studies, whatever fits';
-    occInput.value = answers.occupation || '';
-    occWrap.appendChild(occInput);
+    occWrap.style.marginTop = '18px';
+    occWrap.innerHTML = `<label class="field-label">What do you do?</label>`;
+    const occRow = document.createElement('div');
+    occRow.className = 'chip-row';
+    const occOptions = [
+      { value: 'student', label: 'Student' },
+      { value: 'work_mnc', label: 'Work in an MNC' },
+      { value: 'work_private_firm', label: 'Work in a private firm' },
+      { value: 'government_job', label: 'Government job' },
+      { value: 'homemaker', label: 'Homemaker' },
+      { value: 'run_startup', label: 'Run a startup' },
+      { value: 'work_at_startup', label: 'Work at a startup' },
+      { value: 'business_owner', label: 'Business owner' },
+      { value: 'freelance_consultant', label: 'Freelance or consultant' },
+      { value: 'artist_creative', label: 'Artist or creative professional' },
+      { value: 'retired', label: 'Retired' },
+      { value: 'other', label: 'Other' }
+    ];
+    let occSelected = answers.occupation || null;
+
+    const occDetailWrap = document.createElement('div');
+    occDetailWrap.className = 'conditional-field';
+    occDetailWrap.innerHTML = `<label class="field-label">What do you do? (optional)</label>`;
+    const occDetailInput = document.createElement('input');
+    occDetailInput.className = 'answer';
+    occDetailInput.placeholder = 'Tell us a bit more';
+    occDetailInput.value = answers.occupation_detail || '';
+    occDetailWrap.appendChild(occDetailInput);
+    if (occSelected === 'other') occDetailWrap.classList.add('open');
+
+    occOptions.forEach(opt => {
+      const chip = document.createElement('button');
+      chip.className = 'chip';
+      chip.textContent = opt.label;
+      if (occSelected === opt.value) chip.classList.add('selected');
+      chip.addEventListener('click', () => {
+        occRow.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+        chip.classList.add('selected');
+        occSelected = opt.value;
+        occDetailWrap.classList.toggle('open', occSelected === 'other');
+        if (occSelected === 'other') setTimeout(() => occDetailInput.focus(), 380);
+      });
+      occRow.appendChild(chip);
+    });
+    occWrap.appendChild(occRow);
     container.appendChild(occWrap);
+    container.appendChild(occDetailWrap);
 
     const actions = document.createElement('div');
     actions.className = 'actions';
@@ -1113,7 +1135,8 @@ const SCREENS = {
 
     btn.addEventListener('click', () => {
       answers.age_band = ageSelected;
-      answers.occupation = occInput.value.trim();
+      answers.occupation = occSelected;
+      answers.occupation_detail = occSelected === 'other' ? occDetailInput.value.trim() : '';
       pressBounce(btn);
       setTimeout(() => goTo('q_optin'), 160);
     });
@@ -1129,13 +1152,18 @@ const SCREENS = {
     container.appendChild(h);
     const p = document.createElement('p');
     p.className = 'lede';
-    p.textContent = 'hoblie is for people who get how much fun making really is. If that sounds like you, we would love to have you in. Would you like to connect on a short call sometime?';
+    p.textContent = 'hoblie is for people who get how much fun making really is. If that sounds like you, we would love to have you in. Would you like to get on a short call or a WhatsApp chat to help us understand more?';
     p.style.marginBottom = '18px';
     container.appendChild(p);
 
     const list = document.createElement('div');
     list.className = 'choice-list';
     container.appendChild(list);
+
+    const errorMsg = document.createElement('p');
+    errorMsg.className = 'error-msg';
+    errorMsg.textContent = "Hmm, that didn't save. Mind trying again?";
+    container.appendChild(errorMsg);
 
     [
       { label: "Yes, I'm in", value: 'yes_im_in' },
@@ -1146,12 +1174,19 @@ const SCREENS = {
       pill.className = 'choice-pill';
       pill.textContent = opt.label;
       pill.addEventListener('click', async () => {
+        errorMsg.classList.remove('show');
         list.querySelectorAll('.choice-pill').forEach(b => { b.classList.remove('selected'); b.disabled = true; });
         pill.classList.add('selected');
         answers.community_opt_in = opt.value;
         answers.completion_seconds = Math.round((Date.now() - startedAt) / 1000);
-        await submitResponse();
-        setTimeout(() => goTo('thankyou'), 320);
+        const ok = await submitResponse();
+        if (ok) {
+          setTimeout(() => goTo('thankyou'), 320);
+        } else {
+          errorMsg.classList.add('show');
+          list.querySelectorAll('.choice-pill').forEach(b => { b.disabled = false; });
+          pill.classList.remove('selected');
+        }
       });
       list.appendChild(pill);
     });
@@ -1171,20 +1206,6 @@ const SCREENS = {
     p.style.marginBottom = '22px';
     container.appendChild(p);
     container.appendChild(buildTicker(['WELCOME TO THE HOBLIEFAM', 'REAL MAKERS, REAL COMMUNITY', 'SEE YOU ON WHATSAPP'], 'teal'));
-  },
-
-  thankyou_exit(container) {
-    container.classList.add('center-copy');
-    const e = document.createElement('div');
-    e.className = 'final-emoji'; e.textContent = '🙂';
-    container.appendChild(e);
-    const h = document.createElement('h1');
-    h.textContent = 'No worries, thanks for letting us know.';
-    container.appendChild(h);
-    const p = document.createElement('p');
-    p.className = 'lede';
-    p.textContent = "We'll catch you around. Keep making good things.";
-    container.appendChild(p);
   }
 };
 
@@ -1215,6 +1236,7 @@ function buildPayload(completed) {
     projective_ideas_detail: answers.projective_ideas_detail || null,
     age_band: answers.age_band || null,
     occupation: answers.occupation || null,
+    occupation_detail: answers.occupation_detail || null,
     community_opt_in: answers.community_opt_in || null,
     completion_seconds: typeof answers.completion_seconds === 'number' ? answers.completion_seconds : null
   };
@@ -1263,7 +1285,6 @@ async function submitResponse() {
     Object.assign(answers, saved.answers || {});
     historyStack.push(...saved.historyStack);
     Object.assign(shuffleCache, saved.shuffleCache || {});
-    currentPath = saved.onExitPath ? EXIT_PATH : MAIN_PATH;
     startedAt = saved.startedAt || Date.now();
     sessionId = saved.sessionId || generateId();
     render(saved.currentId, { direction: 'forward' });

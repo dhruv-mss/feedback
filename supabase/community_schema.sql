@@ -48,6 +48,7 @@ create table if not exists public.community_responses (
 
   age_band text,
   occupation text,
+  occupation_detail text,
 
   community_opt_in text,       -- 'yes_im_in' | 'maybe_later' | 'keep_me_posted'
 
@@ -92,7 +93,7 @@ begin
     traits2, traits2_order,
     difficulty_pref,
     projective_ideas, projective_ideas_detail,
-    age_band, occupation,
+    age_band, occupation, occupation_detail,
     community_opt_in,
     completion_seconds
   )
@@ -110,7 +111,7 @@ begin
     payload->'traits2', payload->'traits2_order',
     payload->>'difficulty_pref',
     payload->'projective_ideas', payload->>'projective_ideas_detail',
-    payload->>'age_band', payload->>'occupation',
+    payload->>'age_band', payload->>'occupation', payload->>'occupation_detail',
     payload->>'community_opt_in',
     (payload->>'completion_seconds')::integer
   )
@@ -139,6 +140,7 @@ begin
     projective_ideas_detail       = excluded.projective_ideas_detail,
     age_band                      = excluded.age_band,
     occupation                    = excluded.occupation,
+    occupation_detail             = excluded.occupation_detail,
     community_opt_in              = excluded.community_opt_in,
     completion_seconds            = excluded.completion_seconds
   where public.community_responses.completed = false; -- a completed row can never be edited again
