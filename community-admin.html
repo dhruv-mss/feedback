@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>hoblie - community responses</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FFF9F0;
+    --bg-deep:#F3E9DB;
+    --card:#FFFFFF;
+    --ink:#1B1815;
+    --ink-muted:#847A6E;
+    --pink:#EF4B8E;
+    --pink-dark:#CE3172;
+    --pink-soft:#FCE1EC;
+    --teal:#1FBFB8;
+    --teal-dark:#158E89;
+    --teal-soft:#DEF6F4;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+  }
+  h1,h2{ font-family:'Baloo 2',sans-serif; font-weight:700; margin:0; }
+
+  .login-wrap{
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .login-card{
+    background:var(--card); border-radius:24px; padding:36px 30px; width:100%; max-width:380px;
+    box-shadow: 0 20px 50px -25px rgba(27,24,21,.18);
+  }
+  .brandmark{ font-family:'Baloo 2',sans-serif; font-weight:800; font-size:19px; color:var(--pink); margin-bottom:6px; }
+  .login-card h1{ font-size:24px; margin-bottom:20px; }
+  .field{ margin-bottom:14px; }
+  label{ display:block; font-size:13px; font-weight:600; color:var(--ink-muted); margin-bottom:6px; }
+  input{
+    width:100%; border:2px solid var(--bg-deep); background:#fff; border-radius:14px;
+    padding:12px 16px; font-size:15px; font-family:'Inter',sans-serif; outline:none; color:var(--ink);
+  }
+  input:focus{ border-color:var(--pink); }
+  .btn{
+    appearance:none; border:none; cursor:pointer; font-weight:600; font-size:15px;
+    border-radius:999px; padding:13px 22px; width:100%; background:var(--pink); color:#fff;
+    margin-top:6px; transition: transform .12s ease;
+  }
+  .btn:active{ transform:scale(.97); }
+  .btn:disabled{ opacity:.5; cursor:not-allowed; }
+  .err{ color:var(--pink-dark); font-size:13.5px; margin-top:10px; display:none; }
+  .err.show{ display:block; }
+
+  .dash{ display:none; max-width:900px; margin:0 auto; padding:26px 20px 60px; }
+  .dash.show{ display:block; }
+  .dash-top{
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; gap:12px; flex-wrap:wrap;
+  }
+  .dash-top h1{ font-size:26px; }
+  .top-actions{ display:flex; gap:10px; }
+  .btn-sm{
+    appearance:none; border:2px solid var(--bg-deep); background:var(--card); color:var(--ink);
+    font-weight:600; font-size:13.5px; border-radius:999px; padding:9px 16px; cursor:pointer;
+  }
+  .btn-sm:hover{ border-color:var(--teal); }
+  .count-pill{
+    background:var(--pink-soft); color:var(--pink-dark); font-weight:700; font-size:13px;
+    padding:6px 14px; border-radius:999px;
+  }
+
+  .cards{ display:flex; flex-direction:column; gap:12px; }
+  .rcard{
+    background:var(--card); border-radius:18px; padding:16px 18px; box-shadow:0 6px 18px -12px rgba(43,36,32,.25);
+    cursor:pointer;
+  }
+  .rcard-head{ display:flex; justify-content:space-between; align-items:center; gap:10px; }
+  .rcard-name{ font-weight:700; font-size:16px; }
+  .rcard-date{ font-size:12.5px; color:var(--ink-muted); white-space:nowrap; }
+  .rcard-tags{ display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+  .tag{ background:var(--teal-soft); color:var(--teal-dark); font-size:11.5px; font-weight:600; padding:4px 10px; border-radius:999px; }
+  .tag.love{ background:var(--pink-soft); color:var(--pink-dark); }
+
+  .rcard-body{
+    max-height:0; overflow:hidden; transition:max-height .3s ease, margin .3s ease;
+  }
+  .rcard.open .rcard-body{ max-height:2000px; margin-top:14px; }
+  .qa{ margin-bottom:12px; }
+  .qa .q{ font-size:12px; font-weight:700; color:var(--ink-muted); text-transform:uppercase; letter-spacing:.02em; margin-bottom:3px; }
+  .qa .a{ font-size:14.5px; line-height:1.5; white-space:pre-wrap; }
+  .qa .a.empty{ color:var(--ink-muted); font-style:italic; }
+
+  .empty-state{ text-align:center; padding:60px 20px; color:var(--ink-muted); }
+  .loading{ text-align:center; padding:60px 20px; color:var(--ink-muted); }
+</style>
+</head>
+<body>
+
+<div class="login-wrap" id="loginWrap">
+  <div class="login-card">
+    <p class="brandmark">hoblie</p>
+    <h1>Sign in</h1>
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="loginEmail" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="loginPassword" autocomplete="current-password">
+    </div>
+    <button class="btn" id="loginBtn">Sign in</button>
+    <p class="err" id="loginErr">Couldn't sign in. Check your email and password.</p>
+  </div>
+</div>
+
+<div class="dash" id="dash">
+  <div class="dash-top">
+    <div>
+      <p class="brandmark" style="margin-bottom:4px;">hoblie</p>
+      <h1>Community responses</h1>
+    </div>
+    <div class="top-actions">
+      <span class="count-pill" id="countPill">0</span>
+      <span class="count-pill" id="inProgressPill" style="background:var(--teal-soft); color:var(--teal-dark); display:none;">0 in progress</span>
+      <button class="btn-sm" id="refreshBtn">Refresh</button>
+      <button class="btn-sm" id="signOutBtn">Sign out</button>
+    </div>
+  </div>
+  <div id="listWrap"><div class="loading">Loading…</div></div>
+</div>
+
+<script type="module">
+// Same project and login as admin.html, different table.
+const SUPABASE_URL = "https://rjasrucloiozbvvmouuu.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_nToADn1Ma-2ILahQkOf64w_QTSKiRG8";
+
+const isConfigured = !SUPABASE_URL.includes("YOUR_SUPABASE_URL") && !SUPABASE_ANON_KEY.includes("YOUR_SUPABASE_ANON_KEY");
+let supabase = null;
+
+async function initSupabase() {
+  if (!isConfigured) return;
+  try {
+    const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+    supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  } catch (e) {
+    console.error('hoblie community admin: could not load Supabase client.', e);
+  }
+}
+const supabaseReady = initSupabase();
+
+const loginWrap = document.getElementById('loginWrap');
+const dash = document.getElementById('dash');
+const loginBtn = document.getElementById('loginBtn');
+const loginErr = document.getElementById('loginErr');
+const listWrap = document.getElementById('listWrap');
+const countPill = document.getElementById('countPill');
+const inProgressPill = document.getElementById('inProgressPill');
+
+function esc(str) {
+  const d = document.createElement('div');
+  d.textContent = str ?? '';
+  return d.innerHTML;
+}
+
+function fmtDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+}
+
+const QA_FIELDS = [
+  ['source_key', 'Tracking key'],
+  ['identity_type', 'Which describes you best'],
+  ['brand_recall', 'Recall the brand'],
+  ['product_tried', 'Product tried'],
+  ['use_case', 'What they use it for'],
+  ['buy_channel', 'Where they usually buy'],
+  ['value_pref', 'What adds the most value'],
+  ['proxy_hobbies', 'Made or bought any of these'],
+  ['keep_or_give', 'What they do with what they make'],
+  ['alone_or_with2', 'Alone or with others'],
+  ['point_of_entry2', 'Point of entry'],
+  ['why_make', 'Why they make'],
+  ['tell_people', 'What they tell people'],
+  ['traits2', 'Traits that sound like them'],
+  ['difficulty_pref', 'Easy or a challenge'],
+  ['projective_ideas', "Things they'd love to make"],
+  ['projective_ideas_detail', 'Something else, in their words'],
+  ['age_band', 'Age'],
+  ['occupation', 'Occupation'],
+  ['community_opt_in', 'Opt-in'],
+  ['completion_seconds', 'Time to complete (s)'],
+  ['last_screen', 'Last screen seen'],
+  ['updated_at', 'Last updated']
+];
+
+function renderRows(rows) {
+  countPill.textContent = rows.length;
+  const inProgressCount = rows.filter(r => !r.completed).length;
+  inProgressPill.textContent = `${inProgressCount} in progress`;
+  inProgressPill.style.display = inProgressCount ? 'inline-block' : 'none';
+  if (!rows.length) {
+    listWrap.innerHTML = '<div class="empty-state">No responses yet. Share the link and check back soon.</div>';
+    return;
+  }
+  listWrap.innerHTML = '';
+  const cards = document.createElement('div');
+  cards.className = 'cards';
+  rows.forEach(r => {
+    const card = document.createElement('div');
+    card.className = 'rcard';
+
+    const tags = [];
+    tags.push(r.completed ? 'Completed' : `In progress (at ${r.last_screen || '?'})`);
+    if (r.identity_type) tags.push(r.identity_type.replace(/_/g, ' '));
+    if (r.product_tried === 'dont_remember') tags.push("doesn't remember");
+    if (r.community_opt_in) tags.push(r.community_opt_in.replace(/_/g, ' '));
+
+    card.innerHTML = `
+      <div class="rcard-head">
+        <div class="rcard-name">${esc(r.source_key || 'No key')}</div>
+        <div class="rcard-date">${fmtDate(r.created_at)}</div>
+      </div>
+      <div class="rcard-tags">${tags.map(t => `<span class="tag ${(t==='yes im in'||t==='Completed')?'love':''}">${esc(t)}</span>`).join('')}</div>
+      <div class="rcard-body">
+        ${QA_FIELDS.map(([key, label]) => {
+          let val = r[key];
+          if (key === 'updated_at' && val) val = fmtDate(val);
+          if (Array.isArray(val)) val = val.length ? val.join(', ') : null;
+          return `<div class="qa"><div class="q">${esc(label)}</div><div class="a ${!val ? 'empty' : ''}">${val ? esc(String(val)) : '-'}</div></div>`;
+        }).join('')}
+      </div>
+    `;
+    card.addEventListener('click', () => card.classList.toggle('open'));
+    cards.appendChild(card);
+  });
+  listWrap.appendChild(cards);
+}
+
+async function loadResponses() {
+  listWrap.innerHTML = '<div class="loading">Loading…</div>';
+  const { data, error } = await supabase.from('community_responses').select('*').order('created_at', { ascending: false });
+  if (error) {
+    listWrap.innerHTML = `<div class="empty-state">Couldn't load responses: ${esc(error.message)}</div>`;
+    return;
+  }
+  renderRows(data || []);
+}
+
+async function showDashboard() {
+  loginWrap.style.display = 'none';
+  dash.classList.add('show');
+  await loadResponses();
+}
+
+document.getElementById('refreshBtn').addEventListener('click', loadResponses);
+document.getElementById('signOutBtn').addEventListener('click', async () => {
+  await supabase.auth.signOut();
+  location.reload();
+});
+
+loginBtn.addEventListener('click', async () => {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  loginErr.classList.remove('show');
+  loginBtn.disabled = true;
+  loginBtn.textContent = 'Signing in…';
+
+  await supabaseReady;
+  if (!isConfigured || !supabase) {
+    loginErr.textContent = isConfigured
+      ? "Couldn't reach Supabase. Check your connection and try again."
+      : 'Supabase is not configured yet. See README.md.';
+    loginErr.classList.add('show');
+    loginBtn.disabled = false;
+    loginBtn.textContent = 'Sign in';
+    return;
+  }
+
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  loginBtn.disabled = false;
+  loginBtn.textContent = 'Sign in';
+  if (error) {
+    loginErr.textContent = "Couldn't sign in. Check your email and password.";
+    loginErr.classList.add('show');
+    return;
+  }
+  showDashboard();
+});
+
+(async function init() {
+  await supabaseReady;
+  if (!isConfigured || !supabase) return;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session) showDashboard();
+})();
+</script>
+</body>
+</html>

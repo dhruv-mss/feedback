@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>hoblie - join the community</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FFF9F0;
+    --bg-deep:#F3E9DB;
+    --card:#FFFFFF;
+    --ink:#1B1815;
+    --ink-muted:#847A6E;
+    --pink:#EF4B8E;
+    --pink-dark:#CE3172;
+    --pink-soft:#FCE1EC;
+    --teal:#1FBFB8;
+    --teal-dark:#158E89;
+    --teal-soft:#DEF6F4;
+    --ring: rgba(239,75,142,0.22);
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; height:100%;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overscroll-behavior-y: none;
+  }
+  body{
+    min-height:100dvh;
+    display:flex;
+    justify-content:center;
+    align-items:stretch;
+  }
+  .app-shell{
+    width:100%;
+    max-width:560px;
+    min-height:100dvh;
+    display:flex;
+    flex-direction:column;
+    position:relative;
+    padding: 20px 22px 28px;
+  }
+  @media (min-width:640px){
+    body{ align-items:center; padding:24px 0;}
+    .app-shell{
+      min-height: min(820px, 92dvh);
+      border-radius:28px;
+      box-shadow: 0 30px 60px -25px rgba(43,36,32,0.25), 0 2px 8px rgba(43,36,32,0.06);
+      background: var(--bg);
+      overflow:hidden;
+    }
+  }
+
+  /* top bar: back button + progress */
+  .topbar{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    height:40px;
+    flex-shrink:0;
+  }
+  .back-btn{
+    width:36px; height:36px;
+    border-radius:50%;
+    border:none;
+    background: var(--bg-deep);
+    color: var(--ink);
+    font-size:18px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    opacity:0; pointer-events:none;
+    transition: opacity .25s ease, transform .15s ease;
+    flex-shrink:0;
+  }
+  .back-btn.visible{ opacity:1; pointer-events:auto; }
+  .back-btn:active{ transform: scale(0.9); }
+
+  .progress-blocks{
+    display:flex;
+    gap:5px;
+    flex:1;
+    flex-wrap:wrap;
+  }
+  .progress-blocks .blk{
+    width:16px; height:8px;
+    border-radius:3px;
+    background: var(--bg-deep);
+    transition: background .35s ease, transform .3s ease;
+  }
+  .progress-blocks .blk.filled{
+    background: var(--pink);
+  }
+  .progress-blocks .blk.just-filled{
+    animation: popBlock .4s ease;
+  }
+  @keyframes popBlock{
+    0%{ transform: scale(1); }
+    40%{ transform: scale(1.35); }
+    100%{ transform: scale(1); }
+  }
+
+  /* stage */
+  .stage{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    padding-top: 18px;
+  }
+  .screen{
+    opacity:0;
+    transform: translateY(14px);
+    transition: opacity .4s cubic-bezier(.22,.61,.36,1), transform .4s cubic-bezier(.22,.61,.36,1);
+  }
+  .screen.active{ opacity:1; transform:translateY(0); }
+  .screen.leaving{ opacity:0; transform: translateY(-14px); }
+  .screen.back-entering{ transform: translateY(-14px); }
+  .screen.back-entering.active{ transform: translateY(0); }
+
+  .eyebrow{
+    font-size:13px;
+    font-weight:700;
+    letter-spacing:.02em;
+    text-transform: uppercase;
+    color: var(--teal-dark);
+    margin:0 0 10px;
+  }
+  h1, h2{
+    font-family:'Baloo 2', sans-serif;
+    font-weight:700;
+    line-height:1.24;
+    margin:0 0 10px;
+    color:var(--ink);
+  }
+  h1{ font-size: clamp(26px, 6.5vw, 32px); }
+  h2{ font-size: clamp(22px, 5.6vw, 27px); }
+  p.help{
+    font-size:15px;
+    color: var(--ink-muted);
+    line-height:1.5;
+    margin:0 0 22px;
+  }
+  .lede{
+    font-size:16px;
+    line-height:1.6;
+    color: var(--ink);
+    margin: 0 0 8px;
+  }
+
+  textarea.answer{
+    width:100%;
+    min-height:120px;
+    resize:vertical;
+    border:2px solid var(--bg-deep);
+    background: var(--card);
+    border-radius:18px;
+    padding:16px 18px;
+    font-family:'Inter',sans-serif;
+    font-size:16px;
+    color:var(--ink);
+    line-height:1.5;
+    outline:none;
+    transition: border-color .2s ease, box-shadow .2s ease;
+  }
+  textarea.answer:focus{
+    border-color: var(--pink);
+    box-shadow: 0 0 0 5px var(--ring);
+  }
+  input.answer{
+    width:100%;
+    border:2px solid var(--bg-deep);
+    background: var(--card);
+    border-radius:999px;
+    padding:14px 20px;
+    font-family:'Inter',sans-serif;
+    font-size:16px;
+    color:var(--ink);
+    outline:none;
+    transition: border-color .2s ease, box-shadow .2s ease;
+  }
+  input.answer:focus{
+    border-color: var(--pink);
+    box-shadow: 0 0 0 5px var(--ring);
+  }
+  label.field-label{
+    display:block;
+    font-size:13px;
+    font-weight:600;
+    color:var(--ink-muted);
+    margin: 0 0 6px 4px;
+  }
+  .field{ margin-bottom:16px; }
+
+  .btn{
+    appearance:none;
+    border:none;
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:16px;
+    border-radius:999px;
+    padding:15px 28px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    transition: transform .12s ease, box-shadow .2s ease, opacity .2s ease;
+  }
+  .btn-primary{
+    background: var(--pink);
+    color: #fff8f2;
+    box-shadow: 0 10px 22px -10px rgba(193,89,45,0.55);
+    width:100%;
+  }
+  .btn-primary:disabled{
+    opacity:.4;
+    cursor:not-allowed;
+    box-shadow:none;
+  }
+  .btn-primary.pressed{ animation: btnBounce .32s ease; }
+  @keyframes btnBounce{
+    0%{ transform:scale(1); }
+    45%{ transform:scale(0.94); }
+    100%{ transform:scale(1); }
+  }
+  .btn-primary:active{ transform:scale(0.97); }
+
+  .skip-link{
+    display:block;
+    text-align:center;
+    margin-top:14px;
+    color: var(--ink-muted);
+    font-size:14px;
+    text-decoration:underline;
+    cursor:pointer;
+    background:none; border:none; font-family:inherit;
+  }
+
+  .actions{ margin-top:22px; }
+
+  /* choice pills */
+  .choice-list{ display:flex; flex-direction:column; gap:12px; margin-top:6px; }
+  .choice-pill{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    background: var(--card);
+    border:2px solid var(--bg-deep);
+    border-radius:20px;
+    padding:16px 18px;
+    font-size:16.5px;
+    font-weight:500;
+    color:var(--ink);
+    cursor:pointer;
+    text-align:left;
+    transition: border-color .18s ease, transform .12s ease, background .18s ease;
+  }
+  .choice-pill .emoji{ font-size:22px; flex-shrink:0; }
+  .choice-pill:active{ transform: scale(0.98); }
+  .choice-pill:hover{ border-color: var(--pink); }
+  .choice-pill.selected{
+    border-color: var(--pink);
+    background: var(--pink-soft);
+    animation: btnBounce .32s ease;
+  }
+
+  /* chips: same look as choice-pill, smaller and inline-wrapping */
+  .chip-row{ display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+  .chip{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:44px;
+    background: var(--card);
+    border:2px solid var(--bg-deep);
+    border-radius:999px;
+    padding:9px 16px;
+    font-size:14.5px;
+    font-weight:500;
+    color:var(--ink);
+    cursor:pointer;
+    text-align:center;
+    transition: border-color .18s ease, transform .12s ease, background .18s ease;
+  }
+  .chip:active{ transform: scale(0.96); }
+  .chip:hover{ border-color: var(--pink); }
+  .chip.selected{
+    border-color: var(--pink);
+    background: var(--pink-soft);
+    animation: btnBounce .32s ease;
+  }
+
+  .center-copy{
+    text-align:center;
+  }
+  .center-copy .btn-primary{ margin-top:26px; }
+
+  .brandmark{
+    font-family:'Baloo 2', sans-serif;
+    font-weight:800;
+    font-size:19px;
+    letter-spacing:-0.01em;
+    color: var(--pink);
+    margin-bottom: 18px;
+  }
+
+  .ticker{
+    overflow:hidden;
+    border-radius:999px;
+    padding:9px 0;
+    margin-bottom:24px;
+  }
+  .ticker.pink{ background: var(--pink); }
+  .ticker.teal{ background: var(--teal); }
+  .ticker-inner{
+    display:flex;
+    width:max-content;
+    animation: tickerScroll 18s linear infinite;
+  }
+  .ticker-item{
+    color:#fff;
+    font-family:'Inter',sans-serif;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    white-space:nowrap;
+    padding:0 14px;
+  }
+  .ticker-item:not(:last-child)::after{ content:'\2022'; margin-left:14px; color: rgba(255,255,255,0.55); }
+  @keyframes tickerScroll{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
+
+  .conditional-field{
+    max-height:0;
+    overflow:hidden;
+    opacity:0;
+    transition: max-height .35s ease, opacity .3s ease, margin .35s ease;
+  }
+  .conditional-field.open{
+    max-height:160px;
+    opacity:1;
+    margin-top:16px;
+  }
+
+  .error-msg{
+    color: var(--pink-dark);
+    font-size:14px;
+    margin-top:10px;
+    display:none;
+  }
+  .error-msg.show{ display:block; }
+
+  .spinner{
+    width:16px; height:16px;
+    border-radius:50%;
+    border:2px solid rgba(255,255,255,0.4);
+    border-top-color:#fff;
+    animation: spin .7s linear infinite;
+    display:none;
+  }
+  .spinner.show{ display:inline-block; }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+
+  .final-emoji{ font-size:44px; margin-bottom:6px; }
+
+  ::selection{ background: var(--pink-soft); }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <div class="topbar">
+    <button class="back-btn" id="backBtn" aria-label="Go back">←</button>
+    <div class="progress-blocks" id="progressBlocks"></div>
+  </div>
+  <div class="stage" id="stage"></div>
+</div>
+
+<script type="module">
+// ---- Supabase config -------------------------------------------------
+// Same project as index.html, different table (community_responses) and
+// a different save function (save_community_response), so the two forms
+// never mix data. See supabase/community_schema.sql.
+const SUPABASE_URL = "https://rjasrucloiozbvvmouuu.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_nToADn1Ma-2ILahQkOf64w_QTSKiRG8";
+
+const isConfigured = !SUPABASE_URL.includes("YOUR_SUPABASE_URL") && !SUPABASE_ANON_KEY.includes("YOUR_SUPABASE_ANON_KEY");
+let supabase = null;
+
+async function initSupabase() {
+  if (!isConfigured) {
+    console.warn("hoblie community form: Supabase isn't configured yet. Responses will be saved to localStorage only, as a backup.");
+    return;
+  }
+  try {
+    const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+    supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  } catch (e) {
+    console.error('hoblie community form: could not load Supabase client, falling back to localStorage.', e);
+  }
+}
+const supabaseReady = initSupabase();
+
+// ---- tracking key, read once from the URL ------------------------------
+// Accepts ?key=, ?k=, ?ref=, ?id=, or a bare query string with no name at
+// all (e.g. "community.html?ABC123"), whichever is present.
+function getSourceKeyFromUrl() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    for (const name of ['key', 'k', 'ref', 'id']) {
+      const v = params.get(name);
+      if (v) return v;
+    }
+    const raw = window.location.search.replace(/^\?/, '');
+    return raw || null;
+  } catch (e) { return null; }
+}
+const sourceKey = getSourceKeyFromUrl();
+
+// ---- state ------------------------------------------------------------
+const answers = {};
+const historyStack = [];
+const shuffleCache = {};
+let currentId = null;
+let startedAt = Date.now();
+
+function generateId() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+}
+let sessionId = null;
+
+// Every screen the respondent can actually see, in order. MAIN_PATH is
+// everyone who remembers the product; EXIT_PATH is the short "I don't
+// remember" close, decided at q_product_tried.
+const MAIN_PATH = [
+  'q_identity', 'q_brand_recall', 'q_product_tried',
+  'q_use_case', 'q_buy_channel', 'q_value_pref',
+  'q_proxy_hobbies', 'q_keep_or_give', 'q_alone_or_with2', 'q_point_of_entry2',
+  'q_why_make', 'q_tell_people', 'q_traits2', 'q_difficulty',
+  'q_projective', 'q_demographics', 'q_optin'
+];
+const EXIT_PATH = ['q_identity', 'q_brand_recall', 'q_product_tried'];
+let currentPath = MAIN_PATH;
+const TERMINAL_SCREENS = new Set(['thankyou', 'thankyou_exit']);
+
+// ---- save / resume progress -------------------------------------------
+const STORAGE_KEY = 'hoblie_community_progress_v1';
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      answers, historyStack, currentId, shuffleCache, startedAt, sessionId,
+      onExitPath: currentPath === EXIT_PATH
+    }));
+  } catch (e) { /* ignore quota/private-mode errors */ }
+}
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+function clearState() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) { /* ignore */ }
+}
+
+const stage = document.getElementById('stage');
+const backBtn = document.getElementById('backBtn');
+const progressBlocksEl = document.getElementById('progressBlocks');
+
+let renderedBlockCount = 0;
+function ensureBlockCount(n) {
+  if (renderedBlockCount === n) return;
+  progressBlocksEl.innerHTML = '';
+  for (let i = 0; i < n; i++) {
+    const b = document.createElement('div');
+    b.className = 'blk';
+    progressBlocksEl.appendChild(b);
+  }
+  renderedBlockCount = n;
+}
+
+function updateProgress(id) {
+  if (id === 'intro') {
+    progressBlocksEl.style.visibility = 'hidden';
+    return;
+  }
+  progressBlocksEl.style.visibility = 'visible';
+  const total = currentPath.length;
+  ensureBlockCount(total);
+  let idx = TERMINAL_SCREENS.has(id) ? total - 1 : currentPath.indexOf(id);
+  if (idx === -1) idx = 0;
+  const blocks = progressBlocksEl.querySelectorAll('.blk');
+  blocks.forEach((b, i) => {
+    const shouldFill = i <= idx;
+    const wasFilled = b.classList.contains('filled');
+    b.classList.toggle('filled', shouldFill);
+    if (shouldFill && !wasFilled) {
+      b.classList.add('just-filled');
+      setTimeout(() => b.classList.remove('just-filled'), 400);
+    }
+  });
+}
+
+backBtn.addEventListener('click', () => {
+  if (historyStack.length < 2) return;
+  historyStack.pop();
+  const prevId = historyStack[historyStack.length - 1];
+  render(prevId, { direction: 'back' });
+});
+
+function goTo(id, opts = {}) {
+  if (opts.pushHistory !== false) historyStack.push(id);
+  render(id, { direction: 'forward' });
+}
+
+function render(id, { direction }) {
+  currentId = id;
+  backBtn.classList.toggle('visible', historyStack.length > 1 && !TERMINAL_SCREENS.has(id));
+  updateProgress(id);
+  if (TERMINAL_SCREENS.has(id)) clearState(); else saveState();
+  if (id !== 'intro' && !TERMINAL_SCREENS.has(id)) syncProgress();
+
+  const outgoing = stage.querySelector('.screen.active');
+  const build = () => {
+    stage.innerHTML = '';
+    const el = document.createElement('div');
+    el.className = 'screen';
+    if (direction === 'back') el.classList.add('back-entering');
+    stage.appendChild(el);
+    SCREENS[id](el);
+    requestAnimationFrame(() => el.classList.add('active'));
+  };
+
+  if (outgoing) {
+    outgoing.classList.remove('active');
+    outgoing.classList.add('leaving');
+    setTimeout(build, 220);
+  } else {
+    build();
+  }
+}
+
+function pressBounce(btn) {
+  btn.classList.remove('pressed');
+  void btn.offsetWidth;
+  btn.classList.add('pressed');
+}
+
+function buildTicker(items, color) {
+  const wrap = document.createElement('div');
+  wrap.className = `ticker ${color}`;
+  const inner = document.createElement('div');
+  inner.className = 'ticker-inner';
+  for (let rep = 0; rep < 2; rep++) {
+    items.forEach(text => {
+      const span = document.createElement('span');
+      span.className = 'ticker-item';
+      span.textContent = text;
+      inner.appendChild(span);
+    });
+  }
+  wrap.appendChild(inner);
+  return wrap;
+}
+
+function shuffleWithPinnedLast(values, pinnedLast) {
+  const pinned = values.filter(v => pinnedLast.includes(v));
+  const rest = values.filter(v => !pinnedLast.includes(v));
+  for (let i = rest.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [rest[i], rest[j]] = [rest[j], rest[i]];
+  }
+  return [...rest, ...pinned];
+}
+
+// ---- reusable screen builders (identical to index.html) ----------------
+
+function renderChoiceScreen(container, { eyebrow, question, help, options, onPick }) {
+  if (eyebrow) {
+    const e = document.createElement('p');
+    e.className = 'eyebrow'; e.textContent = eyebrow;
+    container.appendChild(e);
+  }
+  const h = document.createElement('h1');
+  h.textContent = question;
+  container.appendChild(h);
+  if (help) {
+    const p = document.createElement('p');
+    p.className = 'help'; p.textContent = help;
+    container.appendChild(p);
+  }
+  const list = document.createElement('div');
+  list.className = 'choice-list';
+  options.forEach(opt => {
+    const pill = document.createElement('button');
+    pill.className = 'choice-pill';
+    pill.innerHTML = (opt.emoji ? `<span class="emoji">${opt.emoji}</span>` : '') + `<span>${opt.label}</span>`;
+    pill.addEventListener('click', () => {
+      list.querySelectorAll('.choice-pill').forEach(p => p.classList.remove('selected'));
+      pill.classList.add('selected');
+      setTimeout(() => onPick(opt.value), 320);
+    });
+    list.appendChild(pill);
+  });
+  container.appendChild(list);
+}
+
+function renderTextScreen(container, { eyebrow, question, help, key, placeholder, optional, nextId, onNext }) {
+  if (eyebrow) {
+    const e = document.createElement('p');
+    e.className = 'eyebrow'; e.textContent = eyebrow;
+    container.appendChild(e);
+  }
+  const h = document.createElement('h1');
+  h.textContent = question;
+  container.appendChild(h);
+  if (help) {
+    const p = document.createElement('p');
+    p.className = 'help'; p.textContent = help;
+    container.appendChild(p);
+  }
+  const ta = document.createElement('textarea');
+  ta.className = 'answer';
+  ta.placeholder = placeholder || 'Type your answer…';
+  ta.value = answers[key] || '';
+  container.appendChild(ta);
+
+  const actions = document.createElement('div');
+  actions.className = 'actions';
+  const btn = document.createElement('button');
+  btn.className = 'btn btn-primary';
+  btn.textContent = 'Continue';
+  btn.disabled = !optional && !ta.value.trim();
+  actions.appendChild(btn);
+  container.appendChild(actions);
+
+  if (!optional) {
+    ta.addEventListener('input', () => { btn.disabled = !ta.value.trim(); });
+  }
+
+  const proceed = () => {
+    answers[key] = ta.value.trim();
+    pressBounce(btn);
+    setTimeout(() => (onNext ? onNext() : goTo(nextId)), 160);
+  };
+  btn.addEventListener('click', proceed);
+
+  if (optional) {
+    const skip = document.createElement('button');
+    skip.className = 'skip-link';
+    skip.textContent = 'Skip this one';
+    skip.addEventListener('click', () => {
+      answers[key] = ta.value.trim();
+      onNext ? onNext() : goTo(nextId);
+    });
+    container.appendChild(skip);
+  }
+
+  setTimeout(() => ta.focus(), 350);
+}
+
+function renderSelectScreen(container, {
+  eyebrow, question, help, options, shuffleKey, pinnedLast = [],
+  variant = 'pill', multi = false, required = false,
+  valueKey, orderKey, followUp, nextId
+}) {
+  if (eyebrow) {
+    const e = document.createElement('p');
+    e.className = 'eyebrow'; e.textContent = eyebrow;
+    container.appendChild(e);
+  }
+  const h = document.createElement('h1');
+  h.textContent = question;
+  container.appendChild(h);
+  if (help) {
+    const p = document.createElement('p');
+    p.className = 'help'; p.textContent = help;
+    container.appendChild(p);
+  }
+
+  let displayOptions = options;
+  if (shuffleKey) {
+    if (!shuffleCache[shuffleKey]) {
+      shuffleCache[shuffleKey] = shuffleWithPinnedLast(options.map(o => o.value), pinnedLast);
+    }
+    const order = shuffleCache[shuffleKey];
+    displayOptions = order.map(v => options.find(o => o.value === v));
+  }
+
+  const existing = answers[valueKey];
+  const selected = multi ? new Set(Array.isArray(existing) ? existing : []) : (existing || null);
+  let singleSelected = multi ? null : selected;
+
+  const list = document.createElement('div');
+  list.className = variant === 'chip' ? 'chip-row' : 'choice-list';
+  container.appendChild(list);
+
+  const actions = document.createElement('div');
+  actions.className = 'actions';
+  const continueBtn = document.createElement('button');
+  continueBtn.className = 'btn btn-primary';
+  continueBtn.textContent = 'Continue';
+
+  let followUpEl = null;
+  let followUpWrap = null;
+  if (followUp) {
+    followUpWrap = document.createElement('div');
+    followUpWrap.className = followUp.revealOnSelect ? 'conditional-field' : 'field';
+    const label = document.createElement('label');
+    label.className = 'field-label';
+    label.textContent = followUp.label;
+    followUpWrap.appendChild(label);
+    followUpEl = document.createElement(followUp.type === 'textarea' ? 'textarea' : 'input');
+    followUpEl.className = 'answer';
+    if (followUp.type === 'textarea') followUpEl.style.minHeight = '90px';
+    followUpEl.placeholder = followUp.placeholder || '';
+    followUpEl.value = answers[followUp.key] || '';
+    followUpWrap.appendChild(followUpEl);
+  }
+
+  function hasSelection() {
+    return multi ? selected.size > 0 : !!singleSelected;
+  }
+  function refreshContinue() {
+    continueBtn.disabled = required && !hasSelection();
+  }
+
+  displayOptions.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = variant === 'chip' ? 'chip' : 'choice-pill';
+    btn.textContent = opt.label;
+    if (multi ? selected.has(opt.value) : singleSelected === opt.value) btn.classList.add('selected');
+    btn.addEventListener('click', () => {
+      if (multi) {
+        if (selected.has(opt.value)) { selected.delete(opt.value); btn.classList.remove('selected'); }
+        else { selected.add(opt.value); btn.classList.add('selected'); }
+      } else {
+        list.querySelectorAll(`.${variant === 'chip' ? 'chip' : 'choice-pill'}`).forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        singleSelected = opt.value;
+        if (followUp && followUp.revealOnSelect) {
+          followUpWrap.classList.add('open');
+          setTimeout(() => followUpEl.focus(), 380);
+        }
+      }
+      refreshContinue();
+    });
+    list.appendChild(btn);
+  });
+
+  if (followUp && followUp.revealOnSelect && singleSelected) followUpWrap.classList.add('open');
+  if (followUpWrap) container.appendChild(followUpWrap);
+
+  refreshContinue();
+  actions.appendChild(continueBtn);
+  container.appendChild(actions);
+
+  continueBtn.addEventListener('click', () => {
+    answers[valueKey] = multi ? Array.from(selected) : singleSelected;
+    if (orderKey) answers[orderKey] = displayOptions.map(o => o.value);
+    if (followUp) answers[followUp.key] = followUpEl.value.trim();
+    pressBounce(continueBtn);
+    const dest = typeof nextId === 'function' ? nextId(answers) : nextId;
+    setTimeout(() => goTo(dest), 160);
+  });
+}
+
+// ---- screens ------------------------------------------------------------
+
+const SCREENS = {
+  intro(container) {
+    container.classList.add('center-copy');
+    container.appendChild(buildTicker(['MADE BY HOBBY LOVERS', 'FOR CURIOUS ADULTS', 'MADE IN INDIA'], 'pink'));
+    const mark = document.createElement('p');
+    mark.className = 'brandmark';
+    mark.textContent = 'hoblie';
+    container.appendChild(mark);
+
+    const h = document.createElement('h1');
+    h.textContent = "Hey! You've bought from hoblie or VibhutiCrafts before. We're building a community for people who get how much fun making things really is.";
+    container.appendChild(h);
+
+    const p = document.createElement('p');
+    p.className = 'lede';
+    p.textContent = "If that sounds like you, we'd love to know. A couple of minutes helps us know who's really part of this, and what to send your way.";
+    container.appendChild(p);
+
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-primary';
+    btn.textContent = "Let's go";
+    btn.style.marginTop = '20px';
+    btn.addEventListener('click', () => {
+      startedAt = Date.now();
+      pressBounce(btn);
+      setTimeout(() => goTo('q_identity'), 160);
+    });
+    container.appendChild(btn);
+  },
+
+  q_identity(container) {
+    renderChoiceScreen(container, {
+      question: 'Which describes you best?',
+      options: [
+        { label: 'Artist or craftsperson', value: 'artist_craftsperson' },
+        { label: 'Arts and crafts enthusiast', value: 'arts_crafts_enthusiast' },
+        { label: 'Hobbyist, a bit of everything', value: 'hobbyist' },
+        { label: 'I just like making and trying new things', value: 'just_like_making' },
+        { label: 'None of these', value: 'none_of_these' }
+      ],
+      onPick(value) { answers.identity_type = value; goTo('q_brand_recall'); }
+    });
+  },
+
+  q_brand_recall(container) {
+    renderChoiceScreen(container, {
+      question: 'Do you still recall the brand, hoblie or VibhutiCrafts?',
+      options: [
+        { label: 'Yes, I know it', value: 'yes_know_it' },
+        { label: 'Vaguely', value: 'vaguely' },
+        { label: 'No, I just bought the product', value: 'no_just_bought' }
+      ],
+      onPick(value) { answers.brand_recall = value; goTo('q_product_tried'); }
+    });
+  },
+
+  q_product_tried(container) {
+    renderChoiceScreen(container, {
+      question: 'Which of our products have you tried?',
+      options: [
+        { label: 'Craft materials, sticks, paper, mirrors and more', value: 'craft_materials' },
+        { label: 'DIY hobby kits, Seafoam Swirls, Madhubani and more', value: 'diy_kits' },
+        { label: "I don't remember", value: 'dont_remember' }
+      ],
+      onPick(value) {
+        answers.product_tried = value;
+        if (value === 'dont_remember') {
+          currentPath = EXIT_PATH;
+          answers.completion_seconds = Math.round((Date.now() - startedAt) / 1000);
+          submitResponse();
+          goTo('thankyou_exit');
+        } else {
+          goTo('q_use_case');
+        }
+      }
+    });
+  },
+
+  q_use_case(container) {
+    renderSelectScreen(container, {
+      question: 'What do you use these for? Pick any that apply.',
+      options: [
+        { value: 'arts_crafts_hobby', label: 'Arts and crafts hobby' },
+        { value: 'cooking_baking_gardening_electronics', label: 'Cooking, baking, gardening or electronics' },
+        { value: 'kids_school_projects', label: "Kids' school projects" },
+        { value: 'parties_decor', label: 'Parties or decor' },
+        { value: 'gifting', label: 'Gifting' },
+        { value: 'business_reselling', label: 'Business or reselling' },
+        { value: 'other', label: 'Other' }
+      ],
+      variant: 'chip',
+      multi: true,
+      valueKey: 'use_case',
+      nextId: 'q_buy_channel'
+    });
+  },
+
+  q_buy_channel(container) {
+    renderChoiceScreen(container, {
+      question: 'Where do you usually buy this kind of thing?',
+      options: [
+        { label: 'Amazon or Flipkart', value: 'amazon_flipkart' },
+        { label: 'Blinkit, Zepto or Instamart', value: 'blinkit_zepto_instamart' },
+        { label: 'Brand stores, like Itsy Bitsy or Sky', value: 'brand_stores' },
+        { label: 'Local stationery shop', value: 'local_stationery' },
+        { label: 'Our website', value: 'our_website' }
+      ],
+      onPick(value) { answers.buy_channel = value; goTo('q_value_pref'); }
+    });
+  },
+
+  q_value_pref(container) {
+    renderChoiceScreen(container, {
+      question: 'What adds the most value for you?',
+      options: [
+        { label: 'New hobby DIY kits with instructions', value: 'new_hobby_kits' },
+        { label: 'Cost effective materials', value: 'cost_effective_materials' },
+        { label: 'High quality materials', value: 'high_quality_materials' },
+        { label: 'A community or tribe to share hobbies with', value: 'community_tribe' }
+      ],
+      onPick(value) { answers.value_pref = value; goTo('q_proxy_hobbies'); }
+    });
+  },
+
+  q_proxy_hobbies(container) {
+    renderSelectScreen(container, {
+      question: 'Made or bought any of these? Pick as many as apply.',
+      options: [
+        { value: 'lego', label: 'LEGO or building blocks' },
+        { value: 'model_kits', label: 'Model kits, wood, metal or plastic' },
+        { value: 'puzzles', label: 'Jigsaw puzzles' },
+        { value: 'clay_pottery', label: 'Clay or pottery' },
+        { value: 'fiber_crafts', label: 'Crochet, knitting or embroidery' },
+        { value: 'resin_candle', label: 'Resin or candle making' },
+        { value: 'paint_by_numbers', label: 'Paint by numbers' },
+        { value: 'journaling', label: 'Journaling or scrapbooking' },
+        { value: 'none_of_these', label: 'None of these' }
+      ],
+      shuffleKey: 'community_proxy_hobbies',
+      pinnedLast: ['none_of_these'],
+      variant: 'chip',
+      multi: true,
+      valueKey: 'proxy_hobbies',
+      orderKey: 'proxy_hobbies_order',
+      nextId: 'q_keep_or_give'
+    });
+  },
+
+  q_keep_or_give(container) {
+    renderChoiceScreen(container, {
+      question: 'What do you usually do with what you make?',
+      options: [
+        { label: 'Keep it out where I can see it', value: 'keep_it_out' },
+        { label: 'Put it away', value: 'put_away' },
+        { label: 'Give it away', value: 'give_away' },
+        { label: 'Post it online, like Instagram', value: 'post_it' },
+        { label: "I usually don't finish", value: 'dont_finish' }
+      ],
+      onPick(value) { answers.keep_or_give = value; goTo('q_alone_or_with2'); }
+    });
+  },
+
+  q_alone_or_with2(container) {
+    renderChoiceScreen(container, {
+      question: 'Do you make things alone, or with others?',
+      options: [
+        { label: 'Always alone', value: 'always_alone' },
+        { label: 'With someone', value: 'with_someone' },
+        { label: 'Around people, but doing my own thing', value: 'around_people' }
+      ],
+      onPick(value) { answers.alone_or_with2 = value; goTo('q_point_of_entry2'); }
+    });
+  },
+
+  q_point_of_entry2(container) {
+    renderChoiceScreen(container, {
+      question: 'When you first got into making as an adult, what was going on?',
+      options: [
+        { label: "I've always been like this", value: 'always_been' },
+        { label: 'A rough patch or burnout', value: 'rough_patch_burnout' },
+        { label: 'Life slowed down', value: 'life_slowed_down' },
+        { label: 'Someone got me into it', value: 'someone_got_me_into_it' },
+        { label: 'I finally had my own money for it', value: 'own_money' },
+        { label: 'Something else', value: 'something_else' }
+      ],
+      onPick(value) { answers.point_of_entry2 = value; goTo('q_why_make'); }
+    });
+  },
+
+  q_why_make(container) {
+    renderChoiceScreen(container, {
+      question: 'Why do you make things?',
+      options: [
+        { label: 'For the beautiful thing I end up with', value: 'beautiful_thing' },
+        { label: 'To learn something new', value: 'learn_something_new' },
+        { label: "It just makes me feel different, can't explain it", value: 'feels_different' }
+      ],
+      onPick(value) { answers.why_make = value; goTo('q_tell_people'); }
+    });
+  },
+
+  q_tell_people(container) {
+    renderChoiceScreen(container, {
+      question: 'Afterwards, what do you tell people, what you made or something you figured out?',
+      options: [
+        { label: 'What I made', value: 'what_i_made' },
+        { label: 'Something I figured out', value: 'figured_out' },
+        { label: "I don't tell anyone", value: 'dont_tell_anyone' }
+      ],
+      onPick(value) { answers.tell_people = value; goTo('q_traits2'); }
+    });
+  },
+
+  q_traits2(container) {
+    renderSelectScreen(container, {
+      question: 'Any of these sound like you? Pick as many as apply.',
+      options: [
+        { value: 'start_more_than_finish', label: 'I start more things than I finish' },
+        { value: 'lose_track_of_time', label: 'I lose track of time' },
+        { value: 'cant_sit_still', label: "I can't sit still without something in my hands" },
+        { value: 'bored_once_cracked', label: "I get bored once I've cracked it" },
+        { value: 'go_deep_then_move_on', label: 'I go deep, then move on' },
+        { value: 'need_show_music_on', label: 'I need a show or music on in the background' },
+        { value: 'none_of_these', label: 'None of these' }
+      ],
+      shuffleKey: 'community_traits',
+      pinnedLast: ['none_of_these'],
+      variant: 'chip',
+      multi: true,
+      valueKey: 'traits2',
+      orderKey: 'traits2_order',
+      nextId: 'q_difficulty'
+    });
+  },
+
+  q_difficulty(container) {
+    renderChoiceScreen(container, {
+      question: 'Easy and relaxing, or a bit of a challenge?',
+      options: [
+        { label: 'Easy and relaxing', value: 'easy_relaxing' },
+        { label: 'A challenge I can crack', value: 'challenge_i_can_crack' },
+        { label: 'The harder the better', value: 'harder_the_better' }
+      ],
+      onPick(value) { answers.difficulty_pref = value; goTo('q_projective'); }
+    });
+  },
+
+  q_projective(container) {
+    renderSelectScreen(container, {
+      question: "Pick anything you'd love to make. As many as you like.",
+      options: [
+        { value: 'recreate_famous_painting', label: 'Recreate a famous painting' },
+        { value: 'sculpt_bonsai', label: 'Sculpt a bonsai' },
+        { value: 'model_train', label: 'A working model train' },
+        { value: 'origami_sorting_hat', label: 'An origami sorting hat' },
+        { value: 'jedi_temple', label: 'Build a Jedi temple' },
+        { value: 'weave_a_painting', label: 'Weave a painting' },
+        { value: 'diy_wall', label: 'A wall that shows who you are' },
+        { value: 'paper_f1_car', label: 'A paper F1 car' },
+        { value: 'something_else', label: 'Something else' }
+      ],
+      variant: 'chip',
+      multi: true,
+      valueKey: 'projective_ideas',
+      followUp: { key: 'projective_ideas_detail', label: "What's the something else? (optional)", type: 'input', revealOnSelect: false },
+      nextId: 'q_demographics'
+    });
+  },
+
+  q_demographics(container) {
+    const mark = document.createElement('p');
+    mark.className = 'brandmark'; mark.textContent = 'hoblie';
+    container.appendChild(mark);
+
+    const h = document.createElement('h2');
+    h.textContent = 'A bit about you';
+    container.appendChild(h);
+    const p = document.createElement('p');
+    p.className = 'lede';
+    p.textContent = 'This stays private, seen only by our small team.';
+    p.style.marginBottom = '18px';
+    container.appendChild(p);
+
+    const ageWrap = document.createElement('div');
+    ageWrap.className = 'field';
+    ageWrap.innerHTML = `<label class="field-label">Age</label>`;
+    const ageRow = document.createElement('div');
+    ageRow.className = 'chip-row';
+    const ageOptions = [
+      { value: 'under_24', label: 'Under 24' },
+      { value: '25_30', label: '25-30' },
+      { value: '31_35', label: '31-35' },
+      { value: '36_42', label: '36-42' },
+      { value: '43_50', label: '43-50' },
+      { value: '50_plus', label: '50+' },
+      { value: 'prefer_not_to_say', label: 'Prefer not to say' }
+    ];
+    let ageSelected = answers.age_band || null;
+    ageOptions.forEach(opt => {
+      const chip = document.createElement('button');
+      chip.className = 'chip';
+      chip.textContent = opt.label;
+      if (ageSelected === opt.value) chip.classList.add('selected');
+      chip.addEventListener('click', () => {
+        ageRow.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+        chip.classList.add('selected');
+        ageSelected = opt.value;
+      });
+      ageRow.appendChild(chip);
+    });
+    ageWrap.appendChild(ageRow);
+    container.appendChild(ageWrap);
+
+    const occWrap = document.createElement('div');
+    occWrap.className = 'field';
+    const occLabel = document.createElement('label');
+    occLabel.className = 'field-label'; occLabel.textContent = 'What do you do?';
+    occWrap.appendChild(occLabel);
+    const occInput = document.createElement('input');
+    occInput.className = 'answer';
+    occInput.placeholder = 'Work, studies, whatever fits';
+    occInput.value = answers.occupation || '';
+    occWrap.appendChild(occInput);
+    container.appendChild(occWrap);
+
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-primary';
+    btn.textContent = 'Continue';
+    actions.appendChild(btn);
+    container.appendChild(actions);
+
+    btn.addEventListener('click', () => {
+      answers.age_band = ageSelected;
+      answers.occupation = occInput.value.trim();
+      pressBounce(btn);
+      setTimeout(() => goTo('q_optin'), 160);
+    });
+  },
+
+  q_optin(container) {
+    const mark = document.createElement('p');
+    mark.className = 'brandmark'; mark.textContent = 'hoblie';
+    container.appendChild(mark);
+
+    const h = document.createElement('h2');
+    h.textContent = "We're building something worth being part of.";
+    container.appendChild(h);
+    const p = document.createElement('p');
+    p.className = 'lede';
+    p.textContent = 'hoblie is for people who get how much fun making really is. If that sounds like you, we would love to have you in. Would you like to connect on a short call sometime?';
+    p.style.marginBottom = '18px';
+    container.appendChild(p);
+
+    const list = document.createElement('div');
+    list.className = 'choice-list';
+    container.appendChild(list);
+
+    [
+      { label: "Yes, I'm in", value: 'yes_im_in' },
+      { label: 'Maybe later', value: 'maybe_later' },
+      { label: 'Just keep me posted', value: 'keep_me_posted' }
+    ].forEach(opt => {
+      const pill = document.createElement('button');
+      pill.className = 'choice-pill';
+      pill.textContent = opt.label;
+      pill.addEventListener('click', async () => {
+        list.querySelectorAll('.choice-pill').forEach(b => { b.classList.remove('selected'); b.disabled = true; });
+        pill.classList.add('selected');
+        answers.community_opt_in = opt.value;
+        answers.completion_seconds = Math.round((Date.now() - startedAt) / 1000);
+        await submitResponse();
+        setTimeout(() => goTo('thankyou'), 320);
+      });
+      list.appendChild(pill);
+    });
+  },
+
+  thankyou(container) {
+    container.classList.add('center-copy');
+    const e = document.createElement('div');
+    e.className = 'final-emoji'; e.textContent = '🎉';
+    container.appendChild(e);
+    const h = document.createElement('h1');
+    h.textContent = "You're in, thank you!";
+    container.appendChild(h);
+    const p = document.createElement('p');
+    p.className = 'lede';
+    p.textContent = "We'll be reaching out on WhatsApp soon. Good things are coming.";
+    p.style.marginBottom = '22px';
+    container.appendChild(p);
+    container.appendChild(buildTicker(['WELCOME TO THE HOBLIEFAM', 'REAL MAKERS, REAL COMMUNITY', 'SEE YOU ON WHATSAPP'], 'teal'));
+  },
+
+  thankyou_exit(container) {
+    container.classList.add('center-copy');
+    const e = document.createElement('div');
+    e.className = 'final-emoji'; e.textContent = '🙂';
+    container.appendChild(e);
+    const h = document.createElement('h1');
+    h.textContent = 'No worries, thanks for letting us know.';
+    container.appendChild(h);
+    const p = document.createElement('p');
+    p.className = 'lede';
+    p.textContent = "We'll catch you around. Keep making good things.";
+    container.appendChild(p);
+  }
+};
+
+function buildPayload(completed) {
+  return {
+    id: sessionId,
+    completed,
+    last_screen: currentId,
+    updated_at: new Date().toISOString(),
+    source_key: sourceKey,
+    identity_type: answers.identity_type || null,
+    brand_recall: answers.brand_recall || null,
+    product_tried: answers.product_tried || null,
+    use_case: answers.use_case || null,
+    buy_channel: answers.buy_channel || null,
+    value_pref: answers.value_pref || null,
+    proxy_hobbies: answers.proxy_hobbies || null,
+    proxy_hobbies_order: answers.proxy_hobbies_order || null,
+    keep_or_give: answers.keep_or_give || null,
+    alone_or_with2: answers.alone_or_with2 || null,
+    point_of_entry2: answers.point_of_entry2 || null,
+    why_make: answers.why_make || null,
+    tell_people: answers.tell_people || null,
+    traits2: answers.traits2 || null,
+    traits2_order: answers.traits2_order || null,
+    difficulty_pref: answers.difficulty_pref || null,
+    projective_ideas: answers.projective_ideas || null,
+    projective_ideas_detail: answers.projective_ideas_detail || null,
+    age_band: answers.age_band || null,
+    occupation: answers.occupation || null,
+    community_opt_in: answers.community_opt_in || null,
+    completion_seconds: typeof answers.completion_seconds === 'number' ? answers.completion_seconds : null
+  };
+}
+
+async function syncProgress() {
+  if (!isConfigured) return;
+  try {
+    await supabaseReady;
+    if (!supabase) return;
+    const { error } = await supabase.rpc('save_community_response', { payload: buildPayload(false) });
+    if (error) console.error('hoblie community form: partial save failed, will retry on next screen.', error);
+  } catch (e) {
+    console.error('hoblie community form: partial save failed, will retry on next screen.', e);
+  }
+}
+
+async function submitResponse() {
+  await supabaseReady;
+  const payload = buildPayload(true);
+
+  if (!isConfigured || !supabase) {
+    try {
+      const backup = JSON.parse(localStorage.getItem('hoblie_community_responses') || '[]');
+      backup.push({ ...payload, saved_at: new Date().toISOString() });
+      localStorage.setItem('hoblie_community_responses', JSON.stringify(backup));
+    } catch (e) { console.error(e); }
+    return true;
+  }
+
+  const { error } = await supabase.rpc('save_community_response', { payload });
+  if (error) {
+    console.error('Supabase save_community_response failed:', error);
+    return false;
+  }
+  return true;
+}
+
+// ---- kick off, resuming a saved session if one exists ------------------
+(function bootstrap() {
+  const saved = loadState();
+  const resumable = saved && saved.currentId && saved.currentId !== 'intro' && !TERMINAL_SCREENS.has(saved.currentId)
+    && Array.isArray(saved.historyStack) && saved.historyStack.length && SCREENS[saved.currentId];
+
+  if (resumable) {
+    Object.assign(answers, saved.answers || {});
+    historyStack.push(...saved.historyStack);
+    Object.assign(shuffleCache, saved.shuffleCache || {});
+    currentPath = saved.onExitPath ? EXIT_PATH : MAIN_PATH;
+    startedAt = saved.startedAt || Date.now();
+    sessionId = saved.sessionId || generateId();
+    render(saved.currentId, { direction: 'forward' });
+    return;
+  }
+
+  startedAt = Date.now();
+  sessionId = generateId();
+  goTo('intro');
+})();
+</script>
+</body>
+</html>
